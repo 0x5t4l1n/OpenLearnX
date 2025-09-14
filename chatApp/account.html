@@ -135,6 +135,12 @@
         .message {
             margin-bottom: 15px;
             display: flex;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .message.sent {
@@ -247,7 +253,7 @@
         .empty-state i {
             font-size: 60px;
             margin-bottom: 15px;
-            background: linear-gradient(135d deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #667eea, #764ba2);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -292,6 +298,8 @@
         let web3, contract;
         let currentChat = null;
         let allContacts = [];
+        let messageStore = new Map(); // Store messages for each chat
+        let blockchainCheckTimer;
         
         const CONTRACT_ADDRESS = '0xd9145CCE52D386f254917e481eB44e9943F39138';
         const CONTRACT_ABI = [
@@ -319,16 +327,16 @@
             }
         ];
 
-        // Initialize app
-        window.addEventListener('load', function() {
+        // Initialize app - NO REFRESH
+        window.addEventListener('load', async function() {
             if (!myAccount) {
                 alert('Please login first!');
                 window.location.href = 'index.html';
                 return;
             }
             
-            console.log('🚀 Starting BlockChat for:', myAccount);
-            initializeApp();
+            console.log('🚀 Starting BlockChat (NO REFRESH MODE)');
+            await initializeApp();
         });
 
         async function initializeApp() {
@@ -348,8 +356,11 @@
                 // Load contacts
                 await loadContacts();
                 
-                // Start monitoring for new messages
-                startMessageMonitoring();
+                // Load all existing messages ONCE
+                await loadAllExistingMessages();
+                
+                // Start checking for NEW messages only (every 6 seconds)
+                startNewMessageChecker();
                 
             } catch (error) {
                 console.error('❌ Initialization failed:', error);
@@ -383,9 +394,68 @@
             }
         }
 
+        // Load all existing messages ONCE when app starts
+        async function loadAllExistingMessages() {
+            try {
+                console.log('📨 Loading all existing messages...');
+                
+                const events = await contract.getPastEvents('message', {
+                    fromBlock: 0,
+                    toBlock: 'latest'
+                });
+                
+                console.log(`Found ${events.length} existing messages on blockchain`);
+                
+                // Store messages by chat address
+                events.forEach(event => {
+                    const from = event.returnValues.from.toLowerCase();
+                    const to = event.returnValues.to.toLowerCase();
+                    const message = event.returnValues.message;
+                    const timestamp = event.returnValues.timestamp;
+                    const myAddr = myAccount.toLowerCase();
+                    
+                    // Determine which chat this message belongs to
+                    let chatWith = null;
+                    let isMyMessage = false;
+                    
+                    if (from === myAddr) {
+                        chatWith = to;
+                        isMyMessage = true;
+                    } else if (to === myAddr) {
+                        chatWith = from;
+                        isMyMessage = false;
+                    }
+                    
+                    if (chatWith) {
+                        if (!messageStore.has(chatWith)) {
+                            messageStore.set(chatWith, []);
+                        }
+                        
+                        messageStore.get(chatWith).push({
+                            message: message,
+                            timestamp: timestamp,
+                            isMyMessage: isMyMessage,
+                            blockNumber: event.blockNumber,
+                            id: `${from}-${to}-${event.blockNumber}-${event.transactionHash}`
+                        });
+                    }
+                });
+                
+                // Sort all message arrays by block number
+                messageStore.forEach(messages => {
+                    messages.sort((a, b) => a.blockNumber - b.blockNumber);
+                });
+                
+                console.log('💾 Stored messages for', messageStore.size, 'conversations');
+                
+            } catch (error) {
+                console.error('❌ Error loading existing messages:', error);
+            }
+        }
+
         function openChat(contactAddress, index) {
-            currentChat = contactAddress;
-            console.log('💬 Opening chat with:', contactAddress);
+            currentChat = contactAddress.toLowerCase();
+            console.log('💬 Opening chat with:', currentChat);
             
             // Update contact selection
             document.querySelectorAll('.contact-item').forEach(item => item.classList.remove('active'));
@@ -394,8 +464,8 @@
             // Show chat interface
             showChatInterface(contactAddress, index + 1);
             
-            // Load messages for this chat
-            loadMessagesForChat(contactAddress);
+            // Display messages for this chat (from memory - NO BLOCKCHAIN CALL)
+            displayStoredMessages(currentChat);
         }
 
         function showChatInterface(contactAddress, contactNumber) {
@@ -410,11 +480,6 @@
                 </div>
                 
                 <div class="messages-area" id="messagesArea">
-                    <div class="empty-state">
-                        <i class="fas fa-comment-dots"></i>
-                        <h5>Start Conversation</h5>
-                        <p>Send the first message!</p>
-                    </div>
                 </div>
                 
                 <div class="input-area">
@@ -427,55 +492,13 @@
             `;
         }
 
-        async function loadMessagesForChat(contactAddress) {
-            try {
-                console.log('📨 Loading messages for:', contactAddress);
-                
-                const events = await contract.getPastEvents('message', {
-                    fromBlock: 0,
-                    toBlock: 'latest'
-                });
-                
-                console.log(`Found ${events.length} total events on blockchain`);
-                
-                // Filter messages for this specific chat
-                const chatMessages = [];
-                const myAddr = myAccount.toLowerCase();
-                const contactAddr = contactAddress.toLowerCase();
-                
-                events.forEach(event => {
-                    const from = event.returnValues.from.toLowerCase();
-                    const to = event.returnValues.to.toLowerCase();
-                    
-                    // Check if this message belongs to our conversation
-                    if ((from === myAddr && to === contactAddr) || (from === contactAddr && to === myAddr)) {
-                        chatMessages.push({
-                            from: from,
-                            to: to,
-                            message: event.returnValues.message,
-                            timestamp: event.returnValues.timestamp,
-                            blockNumber: event.blockNumber,
-                            isMyMessage: from === myAddr
-                        });
-                    }
-                });
-                
-                // Sort by block number
-                chatMessages.sort((a, b) => a.blockNumber - b.blockNumber);
-                
-                console.log(`💬 Found ${chatMessages.length} messages in this chat`);
-                
-                // Display messages
-                displayMessages(chatMessages);
-                
-            } catch (error) {
-                console.error('❌ Error loading messages:', error);
-            }
-        }
-
-        function displayMessages(messages) {
+        // Display messages from memory (INSTANT - NO BLOCKCHAIN CALL)
+        function displayStoredMessages(chatAddress) {
             const messagesArea = document.getElementById('messagesArea');
             if (!messagesArea) return;
+            
+            const messages = messageStore.get(chatAddress) || [];
+            console.log(`💬 Displaying ${messages.length} stored messages for ${chatAddress}`);
             
             if (messages.length === 0) {
                 messagesArea.innerHTML = `
@@ -491,22 +514,43 @@
             let html = '';
             messages.forEach(msg => {
                 const messageClass = msg.isMyMessage ? 'sent' : 'received';
+                const timeLabel = msg.isMyMessage ? 'sent' : 'received';
+                
                 html += `
                     <div class="message ${messageClass}">
                         <div class="message-bubble">
                             <div>${escapeHtml(msg.message)}</div>
-                            <div class="message-time">${msg.timestamp}</div>
+                            <div class="message-time">${timeLabel} ${msg.timestamp}</div>
                         </div>
                     </div>
                 `;
             });
             
             messagesArea.innerHTML = html;
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
+
+        // INSTANT message adding to UI
+        function addMessageToUI(chatAddress, message, timestamp, isMyMessage) {
+            console.log('➕ Adding message to UI instantly:', message);
             
-            // Scroll to bottom
-            setTimeout(() => {
-                messagesArea.scrollTop = messagesArea.scrollHeight;
-            }, 100);
+            // Add to memory store
+            if (!messageStore.has(chatAddress)) {
+                messageStore.set(chatAddress, []);
+            }
+            
+            messageStore.get(chatAddress).push({
+                message: message,
+                timestamp: timestamp,
+                isMyMessage: isMyMessage,
+                blockNumber: 999999, // Temporary
+                id: `temp-${Date.now()}`
+            });
+            
+            // Update UI if this chat is currently open
+            if (currentChat === chatAddress) {
+                displayStoredMessages(chatAddress);
+            }
         }
 
         async function sendMessage() {
@@ -525,12 +569,7 @@
             }
             
             try {
-                console.log('📤 Sending message:', messageText, 'to:', currentChat);
-                
-                // Disable UI
-                input.disabled = true;
-                sendBtn.disabled = true;
-                sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                console.log('📤 Sending message:', messageText);
                 
                 // Create timestamp
                 const now = new Date();
@@ -541,34 +580,128 @@
                                      minute: '2-digit' 
                                  });
                 
-                // Send to blockchain
-                const receipt = await contract.methods
+                // INSTANTLY show message in UI
+                addMessageToUI(currentChat, messageText, timestamp, true);
+                
+                // Clear input immediately
+                input.value = '';
+                
+                // Disable send button temporarily
+                sendBtn.disabled = true;
+                sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                
+                // Send to blockchain in background
+                await contract.methods
                     .sendMessage(currentChat, messageText, timestamp)
                     .send({
                         from: myAccount,
                         gas: 300000
                     });
                 
-                console.log('✅ Message sent! Transaction:', receipt.transactionHash);
-                
-                // Clear input
-                input.value = '';
-                
-                // Reload messages to show the new one
-                setTimeout(() => {
-                    loadMessagesForChat(currentChat);
-                }, 2000);
+                console.log('✅ Message sent to blockchain');
                 
             } catch (error) {
                 console.error('❌ Failed to send message:', error);
                 alert('Failed to send message: ' + error.message);
+                
+                // Remove the temporary message from UI
+                const messages = messageStore.get(currentChat);
+                if (messages) {
+                    const tempIndex = messages.findIndex(msg => msg.id.startsWith('temp-'));
+                    if (tempIndex !== -1) {
+                        messages.splice(tempIndex, 1);
+                        displayStoredMessages(currentChat);
+                    }
+                }
             } finally {
-                // Re-enable UI
-                input.disabled = false;
+                // Re-enable send button
                 sendBtn.disabled = false;
                 sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
                 input.focus();
             }
+        }
+
+        // Check for NEW messages only (every 6 seconds)
+        function startNewMessageChecker() {
+            let lastCheckedBlock = 0;
+            
+            // Get current block number
+            web3.eth.getBlockNumber().then(blockNumber => {
+                lastCheckedBlock = blockNumber;
+                console.log('📦 Starting from block:', lastCheckedBlock);
+            });
+            
+            blockchainCheckTimer = setInterval(async () => {
+                try {
+                    const currentBlock = await web3.eth.getBlockNumber();
+                    
+                    if (currentBlock > lastCheckedBlock) {
+                        console.log('📦 Checking for new messages from block', lastCheckedBlock + 1, 'to', currentBlock);
+                        
+                        // Only get events from new blocks
+                        const newEvents = await contract.getPastEvents('message', {
+                            fromBlock: lastCheckedBlock + 1,
+                            toBlock: currentBlock
+                        });
+                        
+                        if (newEvents.length > 0) {
+                            console.log('📨 Found', newEvents.length, 'new messages');
+                            
+                            // Process new messages
+                            newEvents.forEach(event => {
+                                const from = event.returnValues.from.toLowerCase();
+                                const to = event.returnValues.to.toLowerCase();
+                                const message = event.returnValues.message;
+                                const timestamp = event.returnValues.timestamp;
+                                const myAddr = myAccount.toLowerCase();
+                                
+                                // Only process if it involves current user
+                                if (from === myAddr || to === myAddr) {
+                                    let chatWith = from === myAddr ? to : from;
+                                    let isMyMessage = from === myAddr;
+                                    
+                                    // Add to message store
+                                    if (!messageStore.has(chatWith)) {
+                                        messageStore.set(chatWith, []);
+                                    }
+                                    
+                                    // Remove any temporary messages with same content
+                                    const messages = messageStore.get(chatWith);
+                                    const tempIndex = messages.findIndex(msg => 
+                                        msg.id.startsWith('temp-') && msg.message === message
+                                    );
+                                    if (tempIndex !== -1) {
+                                        messages.splice(tempIndex, 1);
+                                    }
+                                    
+                                    // Add the real message
+                                    messages.push({
+                                        message: message,
+                                        timestamp: timestamp,
+                                        isMyMessage: isMyMessage,
+                                        blockNumber: event.blockNumber,
+                                        id: `${from}-${to}-${event.blockNumber}-${event.transactionHash}`
+                                    });
+                                    
+                                    // Sort by block number
+                                    messages.sort((a, b) => a.blockNumber - b.blockNumber);
+                                    
+                                    // Update UI if this chat is currently open
+                                    if (currentChat === chatWith) {
+                                        console.log('🔄 Updating current chat display');
+                                        displayStoredMessages(chatWith);
+                                    }
+                                }
+                            });
+                        }
+                        
+                        lastCheckedBlock = currentBlock;
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Error checking for new messages:', error);
+                }
+            }, 6000); // Check every 6 seconds
         }
 
         function handleEnter(event) {
@@ -578,16 +711,6 @@
             }
         }
 
-        // Monitor for new messages every 5 seconds
-        function startMessageMonitoring() {
-            setInterval(() => {
-                if (currentChat) {
-                    console.log('🔄 Checking for new messages...');
-                    loadMessagesForChat(currentChat);
-                }
-            }, 5000);
-        }
-
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
@@ -595,9 +718,15 @@
         }
 
         function logout() {
+            if (blockchainCheckTimer) clearInterval(blockchainCheckTimer);
             localStorage.removeItem('myaddress');
             window.location.href = 'index.html';
         }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (blockchainCheckTimer) clearInterval(blockchainCheckTimer);
+        });
     </script>
 </body>
 </html>
