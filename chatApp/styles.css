@@ -1,0 +1,202 @@
+/* Google Font */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;500;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    color: #fff;
+}
+
+/* Header */
+header {
+    background: linear-gradient(135deg, #ff007f, #6200ff);
+    padding: 20px 0;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 5px 15px rgba(255, 0, 128, 0.5);
+}
+
+header h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.5em;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    background: linear-gradient(90deg, #ffcc00, #ff007f);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 15px rgba(255, 140, 0, 0.8);
+}
+
+/* Navigation */
+nav ul {
+    list-style: none;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+nav ul li {
+    display: inline;
+}
+
+nav ul li a {
+    color: white;
+    text-decoration: none;
+    font-size: 1.2em;
+    padding: 10px 20px;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+nav ul li a:hover {
+    background: #ff007f;
+    box-shadow: 0 0 10px #ff007f;
+}
+
+/* Main Section */
+#main {
+    text-align: center;
+    padding: 100px 20px;
+    background: linear-gradient(135deg, #1a1a1a, #333333);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    border-radius: 10px;
+    margin: 50px auto;
+    max-width: 800px;
+    animation: fadeIn 1.5s ease-in-out;
+}
+
+#main h2 {
+    font-size: 2.5em;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #ffcc00;
+    text-shadow: 0 0 20px rgba(255, 140, 0, 0.7);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    from {
+        transform: scale(1);
+        filter: drop-shadow(0px 0px 10px #ffcc00);
+    }
+    to {
+        transform: scale(1.1);
+        filter: drop-shadow(0px 0px 20px #ffcc00);
+    }
+}
+
+/* Contact Section */
+#contact-form {
+    background: url('https://i.gifer.com/Xlcy.gif') center/cover no-repeat; /* Change background to GIF */
+    text-align: center;
+    padding: 100px 20px;
+    color: white;
+}
+
+#contact-form h2 {
+    font-size: 2.5em;
+    text-transform: uppercase;
+    color: #ffcc00;
+    text-shadow: 0 0 15px #ffcc00;
+}
+
+#contact-form form {
+    background: rgba(0, 0, 0, 0.7);
+    padding: 30px;
+    display: inline-block;
+    border-radius: 10px;
+    box-shadow: 0 0 15px #ffcc00;
+}
+
+#contact-form input, #contact-form textarea {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 5px;
+    background: #222;
+    color: white;
+}
+
+#contact-form button {
+    background: #ff007f;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#contact-form button:hover {
+    background: #ffcc00;
+    box-shadow: 0 0 15px #ffcc00;
+}
+
+/* 3D Buttons */
+button, .button_1 {
+    font-family: 'Orbitron', sans-serif;
+    background: linear-gradient(135deg, #ff007f, #6200ff);
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    font-size: 1.1em;
+    border-radius: 5px;
+    cursor: pointer;
+    box-shadow: 0px 4px 10px rgba(255, 0, 128, 0.5);
+    transition: all 0.3s ease-in-out;
+}
+
+button:hover, .button_1:hover {
+    transform: scale(1.1);
+    background: linear-gradient(135deg, #ffcc00, #ff007f);
+    box-shadow: 0px 4px 20px rgba(255, 204, 0, 0.8);
+}
+
+/* Footer */
+footer {
+    background: #111;
+    text-align: center;
+    padding: 20px;
+    color: white;
+    margin-top: 50px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 2em;
+    }
+
+    nav ul {
+        flex-direction: column;
+    }
+
+    #main h2 {
+        font-size: 2em;
+    }
+
+    #contact-form form {
+        width: 80%;
+    }
+}

@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlockChat</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0e1621;
+            height: 100vh;
+            overflow: hidden;
+            color: white;
+        }
+        
+        .chat-container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 400px;
+            background: #1e2129;
+            border-right: 1px solid #2e3a59;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 25px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .user-info h4 {
+            margin: 0;
+            font-size: 20px;
+        }
+        
+        .user-info small {
+            opacity: 0.9;
+        }
+        
+        .contacts-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+        
+        .contact-item {
+            padding: 20px 25px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+            color: #8e959e;
+            border-left: 3px solid transparent;
+        }
+        
+        .contact-item:hover {
+            background: #2e3a59;
+            color: white;
+        }
+        
+        .contact-item.active {
+            background: #2e3a59;
+            border-left-color: #667eea;
+            color: white;
+        }
+        
+        .contact-avatar {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        
+        .contact-info h6 {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+        }
+        
+        .contact-info small {
+            opacity: 0.7;
+        }
+        
+        /* Chat Area */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-header {
+            background: #1e2129;
+            padding: 20px 25px;
+            border-bottom: 1px solid #2e3a59;
+            display: flex;
+            align-items: center;
+        }
+        
+        .chat-avatar {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+        
+        .messages-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #0e1621;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+        }
+        
+        .message.sent {
+            justify-content: flex-end;
+        }
+        
+        .message.received {
+            justify-content: flex-start;
+        }
+        
+        .message-bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+        }
+        
+        .message.sent .message-bubble {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .message.received .message-bubble {
+            background: #1e2129;
+            color: white;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .message-time {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+        
+        .input-area {
+            background: #1e2129;
+            padding: 20px 25px;
+            border-top: 1px solid #2e3a59;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .message-input {
+            flex: 1;
+            background: #0e1621;
+            border: 2px solid #2e3a59;
+            border-radius: 25px;
+            padding: 12px 20px;
+            color: white;
+            outline: none;
+            font-size: 15px;
+        }
+        
+        .message-input:focus {
+            border-color: #667eea;
+        }
+        
+        .message-input::placeholder {
+            color: #8e959e;
+        }
+        
+        .send-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .send-btn:hover:not(:disabled) {
+            transform: scale(1.1);
+        }
+        
+        .send-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #8e959e;
+        }
+        
+        .welcome-screen i {
+            font-size: 80px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: #8e959e;
+            padding: 50px 20px;
+        }
+        
+        .empty-state i {
+            font-size: 60px;
+            margin-bottom: 15px;
+            background: linear-gradient(135d deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="user-info">
+                    <h4><i class="fas fa-comments me-2"></i>BlockChat</h4>
+                    <small id="myAddress">Loading...</small>
+                </div>
+                <button class="btn btn-outline-light btn-sm" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+            
+            <div class="contacts-list" id="contactsList">
+                <div class="text-center p-4">
+                    <div class="spinner-border text-primary"></div>
+                    <p class="mt-2">Loading contacts...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chat Area -->
+        <div class="chat-area">
+            <div class="welcome-screen">
+                <i class="fas fa-comments"></i>
+                <h3>Welcome to BlockChat</h3>
+                <p>Select a contact to start messaging</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.7.4/web3.min.js"></script>
+    <script>
+        // Global variables
+        let myAccount = localStorage.getItem('myaddress');
+        let web3, contract;
+        let currentChat = null;
+        let allContacts = [];
+        
+        const CONTRACT_ADDRESS = '0xd9145CCE52D386f254917e481eB44e9943F39138';
+        const CONTRACT_ABI = [
+            {
+                "anonymous": false,
+                "inputs": [
+                    {"indexed": true, "internalType": "address", "name": "from", "type": "address"},
+                    {"indexed": false, "internalType": "string", "name": "message", "type": "string"},
+                    {"indexed": false, "internalType": "address", "name": "to", "type": "address"},
+                    {"indexed": false, "internalType": "string", "name": "timestamp", "type": "string"}
+                ],
+                "name": "message",
+                "type": "event"
+            },
+            {
+                "inputs": [
+                    {"internalType": "address", "name": "_to", "type": "address"},
+                    {"internalType": "string", "name": "_message", "type": "string"},
+                    {"internalType": "string", "name": "time", "type": "string"}
+                ],
+                "name": "sendMessage",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }
+        ];
+
+        // Initialize app
+        window.addEventListener('load', function() {
+            if (!myAccount) {
+                alert('Please login first!');
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            console.log('🚀 Starting BlockChat for:', myAccount);
+            initializeApp();
+        });
+
+        async function initializeApp() {
+            try {
+                // Connect to blockchain
+                web3 = new Web3('http://127.0.0.1:8545');
+                contract = new web3.eth.Contract(CONTRACT_ABI, CONTRACT_ADDRESS);
+                
+                // Test connection
+                await web3.eth.net.isListening();
+                console.log('✅ Connected to blockchain');
+                
+                // Show user address
+                document.getElementById('myAddress').textContent = 
+                    myAccount.substring(0, 6) + '...' + myAccount.substring(38);
+                
+                // Load contacts
+                await loadContacts();
+                
+                // Start monitoring for new messages
+                startMessageMonitoring();
+                
+            } catch (error) {
+                console.error('❌ Initialization failed:', error);
+                alert('Failed to connect to blockchain!');
+            }
+        }
+
+        async function loadContacts() {
+            try {
+                const accounts = await web3.eth.getAccounts();
+                allContacts = accounts.filter(acc => acc.toLowerCase() !== myAccount.toLowerCase());
+                
+                let html = '';
+                allContacts.forEach((contact, index) => {
+                    html += `
+                        <div class="contact-item" onclick="openChat('${contact}', ${index})">
+                            <div class="contact-avatar">${index + 1}</div>
+                            <div class="contact-info">
+                                <h6>Contact ${index + 1}</h6>
+                                <small>${contact.substring(0, 10)}...${contact.substring(32)}</small>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('contactsList').innerHTML = html;
+                console.log('📞 Loaded', allContacts.length, 'contacts');
+                
+            } catch (error) {
+                console.error('❌ Error loading contacts:', error);
+            }
+        }
+
+        function openChat(contactAddress, index) {
+            currentChat = contactAddress;
+            console.log('💬 Opening chat with:', contactAddress);
+            
+            // Update contact selection
+            document.querySelectorAll('.contact-item').forEach(item => item.classList.remove('active'));
+            document.querySelectorAll('.contact-item')[index].classList.add('active');
+            
+            // Show chat interface
+            showChatInterface(contactAddress, index + 1);
+            
+            // Load messages for this chat
+            loadMessagesForChat(contactAddress);
+        }
+
+        function showChatInterface(contactAddress, contactNumber) {
+            const chatArea = document.querySelector('.chat-area');
+            chatArea.innerHTML = `
+                <div class="chat-header">
+                    <div class="chat-avatar">${contactNumber}</div>
+                    <div>
+                        <h6 style="margin: 0;">Contact ${contactNumber}</h6>
+                        <small>${contactAddress.substring(0, 12)}...</small>
+                    </div>
+                </div>
+                
+                <div class="messages-area" id="messagesArea">
+                    <div class="empty-state">
+                        <i class="fas fa-comment-dots"></i>
+                        <h5>Start Conversation</h5>
+                        <p>Send the first message!</p>
+                    </div>
+                </div>
+                
+                <div class="input-area">
+                    <input type="text" class="message-input" id="messageInput" 
+                           placeholder="Type a message..." onkeypress="handleEnter(event)">
+                    <button class="send-btn" onclick="sendMessage()" id="sendBtn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            `;
+        }
+
+        async function loadMessagesForChat(contactAddress) {
+            try {
+                console.log('📨 Loading messages for:', contactAddress);
+                
+                const events = await contract.getPastEvents('message', {
+                    fromBlock: 0,
+                    toBlock: 'latest'
+                });
+                
+                console.log(`Found ${events.length} total events on blockchain`);
+                
+                // Filter messages for this specific chat
+                const chatMessages = [];
+                const myAddr = myAccount.toLowerCase();
+                const contactAddr = contactAddress.toLowerCase();
+                
+                events.forEach(event => {
+                    const from = event.returnValues.from.toLowerCase();
+                    const to = event.returnValues.to.toLowerCase();
+                    
+                    // Check if this message belongs to our conversation
+                    if ((from === myAddr && to === contactAddr) || (from === contactAddr && to === myAddr)) {
+                        chatMessages.push({
+                            from: from,
+                            to: to,
+                            message: event.returnValues.message,
+                            timestamp: event.returnValues.timestamp,
+                            blockNumber: event.blockNumber,
+                            isMyMessage: from === myAddr
+                        });
+                    }
+                });
+                
+                // Sort by block number
+                chatMessages.sort((a, b) => a.blockNumber - b.blockNumber);
+                
+                console.log(`💬 Found ${chatMessages.length} messages in this chat`);
+                
+                // Display messages
+                displayMessages(chatMessages);
+                
+            } catch (error) {
+                console.error('❌ Error loading messages:', error);
+            }
+        }
+
+        function displayMessages(messages) {
+            const messagesArea = document.getElementById('messagesArea');
+            if (!messagesArea) return;
+            
+            if (messages.length === 0) {
+                messagesArea.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-comment-dots"></i>
+                        <h5>Start Conversation</h5>
+                        <p>Send the first message!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            messages.forEach(msg => {
+                const messageClass = msg.isMyMessage ? 'sent' : 'received';
+                html += `
+                    <div class="message ${messageClass}">
+                        <div class="message-bubble">
+                            <div>${escapeHtml(msg.message)}</div>
+                            <div class="message-time">${msg.timestamp}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            messagesArea.innerHTML = html;
+            
+            // Scroll to bottom
+            setTimeout(() => {
+                messagesArea.scrollTop = messagesArea.scrollHeight;
+            }, 100);
+        }
+
+        async function sendMessage() {
+            if (!currentChat) {
+                alert('Please select a chat first!');
+                return;
+            }
+            
+            const input = document.getElementById('messageInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const messageText = input.value.trim();
+            
+            if (!messageText) {
+                alert('Please enter a message!');
+                return;
+            }
+            
+            try {
+                console.log('📤 Sending message:', messageText, 'to:', currentChat);
+                
+                // Disable UI
+                input.disabled = true;
+                sendBtn.disabled = true;
+                sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                
+                // Create timestamp
+                const now = new Date();
+                const timestamp = now.toLocaleDateString("en-IN") + ' ' + 
+                                 now.toLocaleTimeString("en-IN", { 
+                                     hour12: true, 
+                                     hour: '2-digit', 
+                                     minute: '2-digit' 
+                                 });
+                
+                // Send to blockchain
+                const receipt = await contract.methods
+                    .sendMessage(currentChat, messageText, timestamp)
+                    .send({
+                        from: myAccount,
+                        gas: 300000
+                    });
+                
+                console.log('✅ Message sent! Transaction:', receipt.transactionHash);
+                
+                // Clear input
+                input.value = '';
+                
+                // Reload messages to show the new one
+                setTimeout(() => {
+                    loadMessagesForChat(currentChat);
+                }, 2000);
+                
+            } catch (error) {
+                console.error('❌ Failed to send message:', error);
+                alert('Failed to send message: ' + error.message);
+            } finally {
+                // Re-enable UI
+                input.disabled = false;
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                input.focus();
+            }
+        }
+
+        function handleEnter(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        // Monitor for new messages every 5 seconds
+        function startMessageMonitoring() {
+            setInterval(() => {
+                if (currentChat) {
+                    console.log('🔄 Checking for new messages...');
+                    loadMessagesForChat(currentChat);
+                }
+            }, 5000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function logout() {
+            localStorage.removeItem('myaddress');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
