@@ -62,6 +62,23 @@ export default function AdminDashboard() {
   const router = useRouter()
 
   // Authentication logic
+  // Helper function to get admin token from localStorage
+  const getAdminToken = (): string | null => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('admin_token')
+    }
+    return null
+  }
+
+  // Helper function to get authorization headers
+  const getAuthHeaders = (): Record<string, string> => {
+    const token = getAdminToken()
+    return {
+      'Authorization': token ? `Bearer ${token}` : '',
+      'Content-Type': 'application/json'
+    }
+  }
+
   useEffect(() => {
     setIsClient(true)
     
@@ -69,31 +86,28 @@ export default function AdminDashboard() {
       try {
         await new Promise(resolve => setTimeout(resolve, 500))
         
-        const token = localStorage.getItem('admin_token')
+        const token = getAdminToken()
         
         if (!token) {
           router.push('/admin/login')
           return
         }
         
-        if (token === 'admin-secret-key') {
-          try {
-            const response = await fetch('http://127.0.0.1:5000/api/admin/courses', {
-              headers: { 'Authorization': `Bearer ${token}` }
-            })
-            
-            if (response.ok) {
-              setIsAuthenticated(true)
-              fetchData()
-            } else {
-              localStorage.removeItem('admin_token')
-              router.push('/admin/login')
-            }
-          } catch (apiError) {
+        // Verify token with API - no hardcoded secret check
+        try {
+          const response = await fetch('http://127.0.0.1:5000/api/admin/courses', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+          
+          if (response.ok) {
             setIsAuthenticated(true)
             fetchData()
+          } else {
+            localStorage.removeItem('admin_token')
+            router.push('/admin/login')
           }
-        } else {
+        } catch (apiError) {
+          // If API is unavailable, don't allow access without verification
           localStorage.removeItem('admin_token')
           router.push('/admin/login')
         }
@@ -114,10 +128,7 @@ export default function AdminDashboard() {
   const fetchCourses = async () => {
     try {
       const response = await fetch('http://127.0.0.1:5000/api/admin/courses', {
-        headers: { 
-          'Authorization': 'Bearer admin-secret-key',
-          'Content-Type': 'application/json'
-        }
+        headers: getAuthHeaders()
       })
       
       if (!response.ok) {
@@ -141,7 +152,7 @@ export default function AdminDashboard() {
   const fetchStats = async () => {
     try {
       const response = await fetch('http://127.0.0.1:5000/api/admin/dashboard', {
-        headers: { 'Authorization': 'Bearer admin-secret-key' }
+        headers: getAuthHeaders()
       })
       if (response.ok) {
         const data = await response.json()
@@ -161,10 +172,7 @@ export default function AdminDashboard() {
       console.log('🔍 Fetching modules for course:', courseId) // Debug log
       
       const response = await fetch(`http://127.0.0.1:5000/api/admin/courses/${courseId}/modules`, {
-        headers: { 
-          'Authorization': 'Bearer admin-secret-key',
-          'Content-Type': 'application/json'
-        }
+        headers: getAuthHeaders()
       })
       
       console.log('🔍 Modules response status:', response.status) // Debug log
@@ -209,10 +217,7 @@ export default function AdminDashboard() {
       console.log('🔍 Fetching lessons for module:', moduleId) // Debug log
       
       const response = await fetch(`http://127.0.0.1:5000/api/admin/modules/${moduleId}/lessons`, {
-        headers: { 
-          'Authorization': 'Bearer admin-secret-key',
-          'Content-Type': 'application/json'
-        }
+        headers: getAuthHeaders()
       })
       
       console.log('🔍 Lessons response status:', response.status) // Debug log
@@ -253,10 +258,7 @@ export default function AdminDashboard() {
     try {
       const response = await fetch('http://127.0.0.1:5000/api/admin/courses', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer admin-secret-key'
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(formData)
       })
       
@@ -277,10 +279,7 @@ export default function AdminDashboard() {
     try {
       const response = await fetch(`http://127.0.0.1:5000/api/admin/courses/${courseId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer admin-secret-key'
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(formData)
       })
       
@@ -301,7 +300,7 @@ export default function AdminDashboard() {
       try {
         const response = await fetch(`http://127.0.0.1:5000/api/admin/courses/${courseId}`, {
           method: 'DELETE',
-          headers: { 'Authorization': 'Bearer admin-secret-key' }
+          headers: getAuthHeaders()
         })
         
         if (response.ok) {
@@ -333,10 +332,7 @@ export default function AdminDashboard() {
       
       const response = await fetch(`http://127.0.0.1:5000/api/admin/courses/${selectedCourse?.id}/modules`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer admin-secret-key'
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(formData)
       })
       
@@ -358,10 +354,7 @@ export default function AdminDashboard() {
       
       const response = await fetch(`http://127.0.0.1:5000/api/admin/modules/${moduleId}/lessons`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer admin-secret-key'
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(formData)
       })
       

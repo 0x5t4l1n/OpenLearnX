@@ -15,9 +15,9 @@ export default function AdminLogin() {
     // Check if already authenticated
     const checkExistingAuth = async () => {
       const token = localStorage.getItem('admin_token')
-      if (token === 'admin-secret-key') {
+      if (token) {
         try {
-          // Verify token with API
+          // Verify token with API - no hardcoded secret check
           const response = await fetch('http://127.0.0.1:5000/api/admin/courses', {
             headers: { 'Authorization': `Bearer ${token}` }
           })

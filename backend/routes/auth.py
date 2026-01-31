@@ -16,8 +16,13 @@ mongo_uri = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/')
 client = MongoClient(mongo_uri)
 db = client.openlearnx
 
-# JWT secret
-JWT_SECRET = os.getenv('JWT_SECRET', 'your-secret-key-here')
+# JWT secret - must be set via environment variable
+JWT_SECRET = os.getenv('JWT_SECRET')
+if not JWT_SECRET:
+    import warnings
+    warnings.warn("JWT_SECRET environment variable not set. Using randomly generated secret.", UserWarning)
+    import secrets as _secrets
+    JWT_SECRET = _secrets.token_hex(32)
 
 @bp.route('/nonce', methods=['POST', 'OPTIONS'])
 def get_nonce():

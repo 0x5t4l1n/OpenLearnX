@@ -31,10 +31,11 @@ def admin_required(f):
             token = auth_header.split(' ')[1] if len(auth_header.split(' ')) > 1 else None
             print(f"Extracted token: '{token}'")
             
-            # Check environment variable first, then fallback to default
+            # Check environment variable - no fallback for security
             expected_token = os.getenv('ADMIN_TOKEN')
             if not expected_token:
-                expected_token = 'admin-secret-key'
+                print("❌ ADMIN_TOKEN environment variable not set")
+                return jsonify({"error": "Server configuration error: ADMIN_TOKEN not configured"}), 500
             
             print(f"Expected token: '{expected_token}'")
             print(f"Environment ADMIN_TOKEN: '{os.getenv('ADMIN_TOKEN')}'")

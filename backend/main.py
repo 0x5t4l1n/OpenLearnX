@@ -110,16 +110,35 @@ def check_docker_availability():
 
 # ✅ ENHANCED: Flask app configuration with your .env variables
 app = Flask(__name__)
+def get_required_secret(env_var: str, description: str) -> str:
+    """Get required secret from environment, raise error if not set"""
+    value = os.getenv(env_var)
+    if not value:
+        raise ValueError(f"{description} ({env_var}) must be set in environment variables for security. Do not use default values for secrets.")
+    return value
+
+# Validate required secrets at startup
+try:
+    _secret_key = get_required_secret('SECRET_KEY', 'Flask secret key')
+    _jwt_secret_key = get_required_secret('JWT_SECRET_KEY', 'JWT secret key')
+    _admin_token = get_required_secret('ADMIN_TOKEN', 'Admin authentication token')
+except ValueError as e:
+    print(f"⚠️ SECURITY WARNING: {e}")
+    print("⚠️ Using insecure defaults for development only. Set proper secrets in production!")
+    _secret_key = os.getenv('SECRET_KEY', os.urandom(32).hex())
+    _jwt_secret_key = os.getenv('JWT_SECRET_KEY', os.urandom(32).hex())
+    _admin_token = os.getenv('ADMIN_TOKEN', os.urandom(16).hex())
+
 app.config.update(
-    SECRET_KEY=os.getenv('SECRET_KEY', 'your-super-secret-key-change-this-in-production-openlearnx-2024'),
+    SECRET_KEY=_secret_key,
     MONGODB_URI=os.getenv('MONGODB_URI', 'mongodb://localhost:27017/'),
     WEB3_PROVIDER_URL=os.getenv('WEB3_PROVIDER_URL', 'http://127.0.0.1:8545'),
     CONTRACT_ADDRESS=os.getenv('CONTRACT_ADDRESS', '0x739f0aCef964f87Bc7974D972a811f8417d74B4C'),
     DEPLOYER_PRIVATE_KEY=os.getenv('DEPLOYER_PRIVATE_KEY'),
     MINTER_PRIVATE_KEY=os.getenv('MINTER_PRIVATE_KEY'),
-    ADMIN_TOKEN=os.getenv('ADMIN_TOKEN', 'admin-secret-key'),
+    ADMIN_TOKEN=_admin_token,
     # ✅ JWT Configuration from your .env
-    JWT_SECRET_KEY=os.getenv('JWT_SECRET_KEY', 'openlearnx-jwt-secret-key-change-in-production'),
+    JWT_SECRET_KEY=_jwt_secret_key,
     JWT_ACCESS_TOKEN_EXPIRES=timedelta(hours=int(os.getenv('JWT_EXPIRATION_HOURS', 168))),
     # ✅ IPFS Configuration from your .env
     IPFS_GATEWAY=os.getenv('IPFS_GATEWAY', 'https://ipfs.infura.io:5001'),
