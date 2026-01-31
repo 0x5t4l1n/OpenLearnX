@@ -110,17 +110,46 @@ def check_docker_availability():
 
 # ✅ ENHANCED: Flask app configuration with your .env variables
 app = Flask(__name__)
+
+class MissingSecretError(ValueError):
+    """Raised when a required secret is not set in environment variables."""
+    pass
+
 def get_required_secret(env_var: str, description: str) -> str:
-    """Get required secret from environment, raise error if not set"""
+    """
+    Get required secret from environment.
+    
+    Args:
+        env_var: Name of the environment variable
+        description: Human-readable description of the secret
+        
+    Returns:
+        The secret value from the environment
+        
+    Raises:
+        MissingSecretError: If the environment variable is not set
+    """
     value = os.getenv(env_var)
     if not value:
-        raise ValueError(f"{description} ({env_var}) must be set in environment variables for security. Do not use default values for secrets.")
+        raise MissingSecretError(f"{description} ({env_var}) must be set in environment variables for security. Do not use default values for secrets.")
     return value
 
 def get_dev_fallback_secret(name: str) -> str:
     """
     Generate a persistent random secret for development use only.
-    Stores the secret in a file to persist across restarts.
+    
+    Stores the secret in a file in the system temp directory to persist across restarts.
+    Files are created with restrictive permissions (0600) to limit access.
+    
+    Args:
+        name: Unique identifier for this secret (used in filename)
+        
+    Returns:
+        A 64-character hex string (32 bytes of randomness)
+        
+    Security Note:
+        These secrets are stored in temp files and should only be used for development.
+        In production, always set proper secrets via environment variables.
     """
     import tempfile
     import stat
@@ -147,7 +176,7 @@ try:
     _secret_key = get_required_secret('SECRET_KEY', 'Flask secret key')
     _jwt_secret_key = get_required_secret('JWT_SECRET_KEY', 'JWT secret key')
     _admin_token = get_required_secret('ADMIN_TOKEN', 'Admin authentication token')
-except ValueError as e:
+except MissingSecretError as e:
     print(f"⚠️ SECURITY WARNING: {e}")
     print("⚠️ Using persistent development secrets. Set proper secrets in production!")
     _secret_key = os.getenv('SECRET_KEY') or get_dev_fallback_secret('secret_key')
