@@ -73,10 +73,13 @@ export default function AdminDashboard() {
   // Helper function to get authorization headers
   const getAuthHeaders = (): Record<string, string> => {
     const token = getAdminToken()
-    return {
-      'Authorization': token ? `Bearer ${token}` : '',
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json'
     }
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+    return headers
   }
 
   useEffect(() => {

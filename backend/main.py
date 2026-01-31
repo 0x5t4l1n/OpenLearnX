@@ -117,6 +117,28 @@ def get_required_secret(env_var: str, description: str) -> str:
         raise ValueError(f"{description} ({env_var}) must be set in environment variables for security. Do not use default values for secrets.")
     return value
 
+def get_dev_fallback_secret(name: str) -> str:
+    """
+    Generate a persistent random secret for development use only.
+    Stores the secret in a file to persist across restarts.
+    """
+    import tempfile
+    secret_file = os.path.join(tempfile.gettempdir(), f'.openlearnx_dev_{name}')
+    try:
+        if os.path.exists(secret_file):
+            with open(secret_file, 'r') as f:
+                return f.read().strip()
+    except Exception:
+        pass
+    # Generate new secret and persist it
+    new_secret = os.urandom(32).hex()
+    try:
+        with open(secret_file, 'w') as f:
+            f.write(new_secret)
+    except Exception:
+        pass  # If we can't persist, just return the generated secret
+    return new_secret
+
 # Validate required secrets at startup
 try:
     _secret_key = get_required_secret('SECRET_KEY', 'Flask secret key')
@@ -124,10 +146,11 @@ try:
     _admin_token = get_required_secret('ADMIN_TOKEN', 'Admin authentication token')
 except ValueError as e:
     print(f"⚠️ SECURITY WARNING: {e}")
-    print("⚠️ Using insecure defaults for development only. Set proper secrets in production!")
-    _secret_key = os.getenv('SECRET_KEY', os.urandom(32).hex())
-    _jwt_secret_key = os.getenv('JWT_SECRET_KEY', os.urandom(32).hex())
-    _admin_token = os.getenv('ADMIN_TOKEN', os.urandom(16).hex())
+    print("⚠️ Using persistent development secrets. Set proper secrets in production!")
+    _secret_key = os.getenv('SECRET_KEY') or get_dev_fallback_secret('secret_key')
+    _jwt_secret_key = os.getenv('JWT_SECRET_KEY') or get_dev_fallback_secret('jwt_secret_key')
+    _admin_token = os.getenv('ADMIN_TOKEN') or get_dev_fallback_secret('admin_token')
+    print(f"⚠️ DEV ADMIN_TOKEN (first 8 chars): {_admin_token[:8]}...")
 
 app.config.update(
     SECRET_KEY=_secret_key,

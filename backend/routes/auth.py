@@ -20,9 +20,22 @@ db = client.openlearnx
 JWT_SECRET = os.getenv('JWT_SECRET')
 if not JWT_SECRET:
     import warnings
-    warnings.warn("JWT_SECRET environment variable not set. Using randomly generated secret.", UserWarning)
-    import secrets as _secrets
-    JWT_SECRET = _secrets.token_hex(32)
+    import tempfile
+    warnings.warn("JWT_SECRET environment variable not set. Using persistent dev secret.", UserWarning)
+    # Use persistent file-based secret for development to avoid invalidating tokens on restart
+    _secret_file = os.path.join(tempfile.gettempdir(), '.openlearnx_dev_jwt_secret_auth')
+    try:
+        if os.path.exists(_secret_file):
+            with open(_secret_file, 'r') as f:
+                JWT_SECRET = f.read().strip()
+        if not JWT_SECRET:
+            import secrets as _secrets
+            JWT_SECRET = _secrets.token_hex(32)
+            with open(_secret_file, 'w') as f:
+                f.write(JWT_SECRET)
+    except Exception:
+        import secrets as _secrets
+        JWT_SECRET = _secrets.token_hex(32)
 
 @bp.route('/nonce', methods=['POST', 'OPTIONS'])
 def get_nonce():
