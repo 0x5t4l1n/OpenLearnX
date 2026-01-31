@@ -2,43 +2,7 @@
 
 **Authors:**
 
-1. **First Author Name**  
-   *Department of Computer Science*  
-   *Institution Name*  
-   City, Country  
-   email@example.com | ORCID: 0000-0000-0000-0000
 
-2. **Second Author Name**  
-   *Department of Computer Science*  
-   *Institution Name*  
-   City, Country  
-   email@example.com | ORCID: 0000-0000-0000-0000
-
-3. **Third Author Name**  
-   *Department of Information Technology*  
-   *Institution Name*  
-   City, Country  
-   email@example.com | ORCID: 0000-0000-0000-0000
-
-4. **Fourth Author Name**  
-   *Department of Computer Science*  
-   *Institution Name*  
-   City, Country  
-   email@example.com | ORCID: 0000-0000-0000-0000
-
-5. **Fifth Author Name**  
-   *Department of Educational Technology*  
-   *Institution Name*  
-   City, Country  
-   email@example.com | ORCID: 0000-0000-0000-0000
-
-6. **Sixth Author Name**  
-   *Department of Computer Science*  
-   *Institution Name*  
-   City, Country  
-   email@example.com | ORCID: 0000-0000-0000-0000
-
----
 
 ## Abstract
 
