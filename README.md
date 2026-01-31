@@ -4,7 +4,7 @@
 
 The platform provides learners with a smarter, personalized, and verifiable way to build and prove skills — from code challenges to real-world learning paths, all backed by blockchain technology.
 
-> 📚 **For detailed documentation, see [DOCUMENTATION.md](./DOCUMENTATION.md)**
+> 📚 **Documentation**: [DOCS_INDEX.md](./DOCS_INDEX.md) | [DOCUMENTATION.md](./DOCUMENTATION.md) | [QUICK_START.md](./QUICK_START.md)
 
 ---
 
