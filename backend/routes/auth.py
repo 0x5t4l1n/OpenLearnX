@@ -21,6 +21,7 @@ JWT_SECRET = os.getenv('JWT_SECRET')
 if not JWT_SECRET:
     import warnings
     import tempfile
+    import stat
     warnings.warn("JWT_SECRET environment variable not set. Using persistent dev secret.", UserWarning)
     # Use persistent file-based secret for development to avoid invalidating tokens on restart
     _secret_file = os.path.join(tempfile.gettempdir(), '.openlearnx_dev_jwt_secret_auth')
@@ -33,6 +34,8 @@ if not JWT_SECRET:
             JWT_SECRET = _secrets.token_hex(32)
             with open(_secret_file, 'w') as f:
                 f.write(JWT_SECRET)
+            # Set restrictive permissions (owner read/write only)
+            os.chmod(_secret_file, stat.S_IRUSR | stat.S_IWUSR)
     except Exception:
         import secrets as _secrets
         JWT_SECRET = _secrets.token_hex(32)

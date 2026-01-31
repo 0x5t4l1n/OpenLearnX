@@ -29,16 +29,12 @@ def admin_required(f):
                 return jsonify({"error": "Invalid authorization format"}), 401
             
             token = auth_header.split(' ')[1] if len(auth_header.split(' ')) > 1 else None
-            print(f"Extracted token: '{token}'")
             
             # Check environment variable - no fallback for security
             expected_token = os.getenv('ADMIN_TOKEN')
             if not expected_token:
                 print("❌ ADMIN_TOKEN environment variable not set")
                 return jsonify({"error": "Server configuration error: ADMIN_TOKEN not configured"}), 500
-            
-            print(f"Expected token: '{expected_token}'")
-            print(f"Environment ADMIN_TOKEN: '{os.getenv('ADMIN_TOKEN')}'")
             
             # Strip any whitespace from both tokens
             if token and expected_token:

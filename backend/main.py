@@ -123,6 +123,7 @@ def get_dev_fallback_secret(name: str) -> str:
     Stores the secret in a file to persist across restarts.
     """
     import tempfile
+    import stat
     secret_file = os.path.join(tempfile.gettempdir(), f'.openlearnx_dev_{name}')
     try:
         if os.path.exists(secret_file):
@@ -135,6 +136,8 @@ def get_dev_fallback_secret(name: str) -> str:
     try:
         with open(secret_file, 'w') as f:
             f.write(new_secret)
+        # Set restrictive permissions (owner read/write only)
+        os.chmod(secret_file, stat.S_IRUSR | stat.S_IWUSR)
     except Exception:
         pass  # If we can't persist, just return the generated secret
     return new_secret
@@ -150,7 +153,6 @@ except ValueError as e:
     _secret_key = os.getenv('SECRET_KEY') or get_dev_fallback_secret('secret_key')
     _jwt_secret_key = os.getenv('JWT_SECRET_KEY') or get_dev_fallback_secret('jwt_secret_key')
     _admin_token = os.getenv('ADMIN_TOKEN') or get_dev_fallback_secret('admin_token')
-    print(f"⚠️ DEV ADMIN_TOKEN (first 8 chars): {_admin_token[:8]}...")
 
 app.config.update(
     SECRET_KEY=_secret_key,
