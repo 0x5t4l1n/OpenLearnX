@@ -242,14 +242,6 @@ Please read [DOCUMENTATION.md](./DOCUMENTATION.md#contributing) for detailed con
 
 ---
 
-## 📞 Contact & Support
-
-- 🌐 Website: [your-website.com]
-- 💬 Discord: [your-discord-link]
-- 🐦 Twitter: [@OpenLearnX]
-- 📧 Email: [your-email]
-- 📖 Docs: [DOCUMENTATION.md](./DOCUMENTATION.md)
-
 ---
 
 ## ⭐ Show Your Support
