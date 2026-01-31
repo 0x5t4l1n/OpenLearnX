@@ -108,37 +108,20 @@ export default function CoursePage() {
       let modulesData = null
       let modulesResponse = null
       
+      // Use public endpoint for course page (not admin endpoint)
       try {
-        modulesResponse = await fetch(`http://127.0.0.1:5000/api/admin/courses/${courseId}/modules`, {
+        modulesResponse = await fetch(`http://127.0.0.1:5000/api/courses/${courseId}/modules`, {
           headers: {
-            'Authorization': 'Bearer admin-secret-key',
             'Content-Type': 'application/json'
           }
         })
         
         if (modulesResponse.ok) {
           modulesData = await modulesResponse.json()
-          console.log('✅ Modules loaded from admin endpoint:', modulesData)
+          console.log('✅ Modules loaded from public endpoint:', modulesData)
         }
-      } catch (adminError) {
-        console.log('⚠️ Admin endpoint failed, trying public endpoint')
-      }
-      
-      if (!modulesData || !modulesResponse?.ok) {
-        try {
-          modulesResponse = await fetch(`http://127.0.0.1:5000/api/courses/${courseId}/modules`, {
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          })
-          
-          if (modulesResponse.ok) {
-            modulesData = await modulesResponse.json()
-            console.log('✅ Modules loaded from public endpoint:', modulesData)
-          }
-        } catch (publicError) {
-          console.error('❌ Both module endpoints failed')
-        }
+      } catch (publicError) {
+        console.error('❌ Module endpoint failed')
       }
       
       if (modulesData) {
@@ -185,20 +168,12 @@ export default function CoursePage() {
       try {
         console.log('🔍 Fetching lessons for module:', module.id)
         
-        let lessonsResponse = await fetch(`http://127.0.0.1:5000/api/admin/modules/${module.id}/lessons`, {
+        // Use public endpoint for course page (not admin endpoint)
+        const lessonsResponse = await fetch(`http://127.0.0.1:5000/api/modules/${module.id}/lessons`, {
           headers: {
-            'Authorization': 'Bearer admin-secret-key',
             'Content-Type': 'application/json'
           }
         })
-        
-        if (!lessonsResponse.ok) {
-          lessonsResponse = await fetch(`http://127.0.0.1:5000/api/modules/${module.id}/lessons`, {
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          })
-        }
         
         if (lessonsResponse.ok) {
           const lessonData = await lessonsResponse.json()

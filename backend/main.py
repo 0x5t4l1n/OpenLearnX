@@ -110,16 +110,89 @@ def check_docker_availability():
 
 # ✅ ENHANCED: Flask app configuration with your .env variables
 app = Flask(__name__)
+
+class MissingSecretError(ValueError):
+    """Raised when a required secret is not set in environment variables."""
+    pass
+
+def get_required_secret(env_var: str, description: str) -> str:
+    """
+    Get required secret from environment.
+    
+    Args:
+        env_var: Name of the environment variable
+        description: Human-readable description of the secret
+        
+    Returns:
+        The secret value from the environment
+        
+    Raises:
+        MissingSecretError: If the environment variable is not set
+    """
+    value = os.getenv(env_var)
+    if not value:
+        raise MissingSecretError(f"{description} ({env_var}) must be set in environment variables for security. Do not use default values for secrets.")
+    return value
+
+def get_dev_fallback_secret(name: str) -> str:
+    """
+    Generate a persistent random secret for development use only.
+    
+    Stores the secret in a file in the system temp directory to persist across restarts.
+    Files are created with restrictive permissions (0600) to limit access.
+    
+    Args:
+        name: Unique identifier for this secret (used in filename)
+        
+    Returns:
+        A 64-character hex string (32 bytes of randomness)
+        
+    Security Note:
+        These secrets are stored in temp files and should only be used for development.
+        In production, always set proper secrets via environment variables.
+    """
+    import tempfile
+    import stat
+    secret_file = os.path.join(tempfile.gettempdir(), f'.openlearnx_dev_{name}')
+    try:
+        if os.path.exists(secret_file):
+            with open(secret_file, 'r') as f:
+                return f.read().strip()
+    except Exception:
+        pass
+    # Generate new secret and persist it
+    new_secret = os.urandom(32).hex()
+    try:
+        with open(secret_file, 'w') as f:
+            f.write(new_secret)
+        # Set restrictive permissions (owner read/write only)
+        os.chmod(secret_file, stat.S_IRUSR | stat.S_IWUSR)
+    except Exception:
+        pass  # If we can't persist, just return the generated secret
+    return new_secret
+
+# Validate required secrets at startup
+try:
+    _secret_key = get_required_secret('SECRET_KEY', 'Flask secret key')
+    _jwt_secret_key = get_required_secret('JWT_SECRET_KEY', 'JWT secret key')
+    _admin_token = get_required_secret('ADMIN_TOKEN', 'Admin authentication token')
+except MissingSecretError as e:
+    print(f"⚠️ SECURITY WARNING: {e}")
+    print("⚠️ Using persistent development secrets. Set proper secrets in production!")
+    _secret_key = os.getenv('SECRET_KEY') or get_dev_fallback_secret('secret_key')
+    _jwt_secret_key = os.getenv('JWT_SECRET_KEY') or get_dev_fallback_secret('jwt_secret_key')
+    _admin_token = os.getenv('ADMIN_TOKEN') or get_dev_fallback_secret('admin_token')
+
 app.config.update(
-    SECRET_KEY=os.getenv('SECRET_KEY', 'your-super-secret-key-change-this-in-production-openlearnx-2024'),
+    SECRET_KEY=_secret_key,
     MONGODB_URI=os.getenv('MONGODB_URI', 'mongodb://localhost:27017/'),
     WEB3_PROVIDER_URL=os.getenv('WEB3_PROVIDER_URL', 'http://127.0.0.1:8545'),
     CONTRACT_ADDRESS=os.getenv('CONTRACT_ADDRESS', '0x739f0aCef964f87Bc7974D972a811f8417d74B4C'),
     DEPLOYER_PRIVATE_KEY=os.getenv('DEPLOYER_PRIVATE_KEY'),
     MINTER_PRIVATE_KEY=os.getenv('MINTER_PRIVATE_KEY'),
-    ADMIN_TOKEN=os.getenv('ADMIN_TOKEN', 'admin-secret-key'),
+    ADMIN_TOKEN=_admin_token,
     # ✅ JWT Configuration from your .env
-    JWT_SECRET_KEY=os.getenv('JWT_SECRET_KEY', 'openlearnx-jwt-secret-key-change-in-production'),
+    JWT_SECRET_KEY=_jwt_secret_key,
     JWT_ACCESS_TOKEN_EXPIRES=timedelta(hours=int(os.getenv('JWT_EXPIRATION_HOURS', 168))),
     # ✅ IPFS Configuration from your .env
     IPFS_GATEWAY=os.getenv('IPFS_GATEWAY', 'https://ipfs.infura.io:5001'),
