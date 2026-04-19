@@ -109,24 +109,6 @@ pnpm run dev
 
 ---
 
-## 🧾 Repository Event Logging Automation
-
-This repository includes a GitHub Actions workflow at:
-
-- `.github/workflows/mirror-repo-events-to-logs.yml`
-
-It captures repository events (push, pull request activity, stars, forks, create/delete, and related interactions) and appends structured JSON logs to:
-
-- `https://github.com/th30d4y/LOGS`
-
-### Required setup
-
-Add this repository secret in **OpenLearnX**:
-
-- `LOGS_REPO_PAT`: a Personal Access Token that can write to `th30d4y/LOGS`.
-  - Fine-grained PAT: grant repository access to `th30d4y/LOGS` with **Contents: Read and write**.
-  - Classic PAT: use **repo** scope.
-  - If this secret is missing, the workflow now exits successfully and skips mirroring with a warning message.
 
 
 
