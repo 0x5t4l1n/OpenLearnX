@@ -36,7 +36,7 @@ jobs:
           fi
 
       - name: Checkout logs repository
-        if: ${{ steps.ensure_pat.outputs.has_pat == 'true' }}
+        if: steps.ensure_pat.outputs.has_pat == 'true'
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
         with:
           repository: th30d4y/LOGS
@@ -44,7 +44,7 @@ jobs:
           path: logs-repo
 
       - name: Append event payload to daily log file
-        if: ${{ steps.ensure_pat.outputs.has_pat == 'true' }}
+        if: steps.ensure_pat.outputs.has_pat == 'true'
         env:
           SOURCE_REPOSITORY: ${{ github.repository }}
           SOURCE_EVENT_NAME: ${{ github.event_name }}
@@ -103,7 +103,7 @@ jobs:
           fi
 
       - name: Commit and push logs
-        if: ${{ steps.ensure_pat.outputs.has_pat == 'true' }}
+        if: steps.ensure_pat.outputs.has_pat == 'true'
         run: |
           set -euo pipefail
           cd logs-repo
