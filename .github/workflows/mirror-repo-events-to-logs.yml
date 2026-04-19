@@ -89,8 +89,8 @@ jobs:
         run: |
           set -euo pipefail
           cd logs-repo
-          git config user.name "openlearnx-log-bot"
-          git config user.email "openlearnx-log-bot@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           if [ -z "$(git status --porcelain)" ]; then
             echo "No log changes to commit"
