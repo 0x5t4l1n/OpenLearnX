@@ -1,0 +1,114 @@
+name: Mirror repository events to LOGS
+
+on:
+  push:
+  pull_request:
+  issues:
+  issue_comment:
+  pull_request_review:
+  pull_request_review_comment:
+  watch:
+    types: [started]
+  fork:
+  create:
+  delete:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mirror-event-log:
+    runs-on: ubuntu-latest
+    env:
+      LOG_ROOT_DIR: openlearnx-events
+    steps:
+      - name: Ensure personal access token exists
+        env:
+          LOGS_REPO_PAT: ${{ secrets.LOGS_REPO_PAT }}
+        run: |
+          if [ -z "$LOGS_REPO_PAT" ]; then
+            echo "Missing required secret: LOGS_REPO_PAT. See README.md for setup instructions."
+            exit 1
+          fi
+
+      - name: Checkout logs repository
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        with:
+          repository: th30d4y/LOGS
+          token: ${{ secrets.LOGS_REPO_PAT }}
+          path: logs-repo
+
+      - name: Append event payload to daily log file
+        env:
+          SOURCE_REPOSITORY: ${{ github.repository }}
+          SOURCE_EVENT_NAME: ${{ github.event_name }}
+          SOURCE_EVENT_ACTION: ${{ github.event.action }}
+          SOURCE_ACTOR: ${{ github.actor }}
+          SOURCE_REF: ${{ github.ref }}
+          SOURCE_SHA: ${{ github.sha }}
+          SOURCE_RUN_ID: ${{ github.run_id }}
+          SOURCE_RUN_ATTEMPT: ${{ github.run_attempt }}
+          SOURCE_SERVER_URL: ${{ github.server_url }}
+        run: |
+          set -euo pipefail
+          export TZ=UTC
+
+          DAY="$(date +%F)"
+          LOG_DIR="logs-repo/${LOG_ROOT_DIR}/$DAY"
+          mkdir -p "$LOG_DIR"
+          LOG_FILE="$LOG_DIR/events.jsonl"
+
+          if [ ! -r "$GITHUB_EVENT_PATH" ]; then
+            echo "GitHub event payload file is missing or unreadable: $GITHUB_EVENT_PATH. Check workflow run environment details."
+            exit 1
+          fi
+
+          jq -cn \
+            --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg repository "$SOURCE_REPOSITORY" \
+            --arg event_name "$SOURCE_EVENT_NAME" \
+            --arg event_action "$SOURCE_EVENT_ACTION" \
+            --arg actor "$SOURCE_ACTOR" \
+            --arg ref "$SOURCE_REF" \
+            --arg sha "$SOURCE_SHA" \
+            --arg run_id "$SOURCE_RUN_ID" \
+            --arg run_attempt "$SOURCE_RUN_ATTEMPT" \
+            --arg run_url "$SOURCE_SERVER_URL/$SOURCE_REPOSITORY/actions/runs/$SOURCE_RUN_ID" \
+            --slurpfile payload "$GITHUB_EVENT_PATH" \
+            '{
+              timestamp: $timestamp,
+              source_repository: $repository,
+              event_name: $event_name,
+              event_action: (if $event_action == "" then null else $event_action end),
+              actor: $actor,
+              ref: (if $ref == "" then null else $ref end),
+              sha: (if $sha == "" then null else $sha end),
+              run: {
+                id: $run_id,
+                attempt: $run_attempt,
+                url: $run_url
+              },
+              payload: $payload[0]
+            }' >> "$LOG_FILE"
+
+          if [ ! -s "$LOG_FILE" ]; then
+            echo "Log write failed: $LOG_FILE was not created with content."
+            exit 1
+          fi
+
+      - name: Commit and push logs
+        run: |
+          set -euo pipefail
+          cd logs-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No log changes to commit"
+            exit 0
+          fi
+
+          git add "${LOG_ROOT_DIR}"
+          git commit -m "log(OpenLearnX): ${{ github.event_name }} @ ${{ github.run_id }}"
+          git push
