@@ -1,0 +1,10 @@
+.next
+node_modules
+.env*
+*.log
+coverage
+.git
+.github
+.vscode
+.npmrc
+pnpm-lock.yaml

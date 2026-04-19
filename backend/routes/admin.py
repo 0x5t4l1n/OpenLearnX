@@ -371,6 +371,100 @@ def get_admin_logs():
         return jsonify({"error": str(e)}), 500
 
 
+@bp.route("/logs/executions", methods=["GET"])
+@admin_required
+def get_execution_logs():
+    """Query compiler/coding execution events as a dedicated log stream."""
+    try:
+        language = request.args.get("language", "").strip().lower()
+        status = request.args.get("status", "").strip().lower()
+        search = request.args.get("search", "").strip()
+        from_ts = request.args.get("from", "").strip()
+        to_ts = request.args.get("to", "").strip()
+        limit = min(max(int(request.args.get("limit", 100)), 1), 500)
+        page = max(int(request.args.get("page", 1)), 1)
+
+        query = {}
+        if language:
+            query["language"] = language
+        if status:
+            query["status"] = status
+
+        ts_filter = {}
+        if from_ts:
+            try:
+                ts_filter["$gte"] = datetime.fromisoformat(from_ts)
+            except Exception:
+                pass
+        if to_ts:
+            try:
+                ts_filter["$lte"] = datetime.fromisoformat(to_ts)
+            except Exception:
+                pass
+        if ts_filter:
+            query["timestamp"] = ts_filter
+
+        if search:
+            safe = re.escape(search)
+            query["$or"] = [
+                {"execution_id": {"$regex": safe, "$options": "i"}},
+                {"language": {"$regex": safe, "$options": "i"}},
+                {"source": {"$regex": safe, "$options": "i"}},
+                {"ip": {"$regex": safe, "$options": "i"}},
+                {"status": {"$regex": safe, "$options": "i"}},
+                {"error": {"$regex": safe, "$options": "i"}},
+            ]
+
+        skip = (page - 1) * limit
+        total = db.code_execution_events.count_documents(query)
+        docs = list(db.code_execution_events.find(query).sort("timestamp", -1).skip(skip).limit(limit))
+
+        logs = []
+        for doc in docs:
+            item = _json_safe(doc)
+            item["id"] = str(item.get("_id"))
+            item.pop("_id", None)
+
+            if not item.get("source"):
+                item["source"] = "compiler"
+
+            if not item.get("request_body"):
+                item["request_body"] = {
+                    "language": item.get("language", "unknown"),
+                    "code": "Legacy log entry (request code body was not captured at execution time)",
+                    "code_size": item.get("code_size", 0),
+                }
+
+            if not item.get("response_body"):
+                item["response_body"] = {
+                    "success": item.get("status") == "success",
+                    "blocked": bool(item.get("blocked")),
+                    "execution_id": item.get("execution_id"),
+                    "error": item.get("error", ""),
+                    "security_violations": item.get("security_violations", []),
+                    "execution_time": item.get("execution_time", 0),
+                    "memory_used": item.get("memory_used", 0),
+                    "exit_code": item.get("exit_code", 0),
+                    "note": "Legacy log entry (response payload was not captured at execution time)",
+                }
+
+            logs.append(item)
+
+        return jsonify({
+            "success": True,
+            "logs": logs,
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "total": total,
+                "pages": (total + limit - 1) // limit,
+            },
+        })
+    except Exception as e:
+        print(f"Error getting execution logs: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
 @bp.route("/users", methods=["GET"])
 @admin_required
 def get_admin_users():

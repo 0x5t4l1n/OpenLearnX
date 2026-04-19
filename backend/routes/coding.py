@@ -10,6 +10,7 @@ import docker
 import psutil
 from pymongo import MongoClient
 from activity_logger import log_user_activity, resolve_user_identity
+from services.real_compiler_service import real_compiler_service
 
 bp = Blueprint('coding', __name__)
 
@@ -86,10 +87,81 @@ def execute_code():
         # Log coding attempt
         log_coding_attempt(session['coding_session_id'], code, language)
         
-        # Execute code in secure container
-        result = execute_in_container(code, language, test_cases)
-        
-        return jsonify(result)
+        # Execute code in hardened Docker sandbox
+        result = real_compiler_service.execute_code(code=code, language=language, input_data="")
+
+        event_type = "coding_execution_success" if result.get("success") else "coding_execution_blocked"
+        severity = "info" if result.get("success") else "warning"
+
+        execution_status = "success" if result.get("success") else "failed"
+        if result.get("blocked"):
+            execution_status = "blocked"
+
+        db.security_logs.insert_one({
+            "timestamp": datetime.utcnow(),
+            "event_type": event_type,
+            "action": "secure_coding_execute",
+            "status_code": 200 if result.get("success") else 400,
+            "severity": severity,
+            "path": request.path,
+            "method": request.method,
+            "ip": request.remote_addr or "unknown",
+            "user_agent": request.headers.get("User-Agent", ""),
+            "metadata": {
+                "language": language,
+                "execution_id": result.get("execution_id"),
+                "blocked": bool(result.get("blocked")),
+                "security_violations": result.get("security_violations", []),
+                "execution_time": result.get("execution_time", 0),
+                "memory_used": result.get("memory_used", 0),
+                "exit_code": result.get("exit_code", -1),
+            },
+            "metadata_text": str(result.get("security_violations", [])),
+        })
+
+        try:
+            request_payload = {
+                "language": language,
+                "code": (code or "")[:4000],
+                "code_size": len(code or ""),
+                "test_case_count": len(test_cases) if isinstance(test_cases, list) else 0,
+            }
+            response_payload = {
+                "success": bool(result.get("success")),
+                "blocked": bool(result.get("blocked")),
+                "execution_id": result.get("execution_id"),
+                "output": (result.get("output") or "")[:4000],
+                "error": result.get("error", ""),
+                "security_violations": result.get("security_violations", []),
+                "execution_time": result.get("execution_time", 0),
+                "memory_used": result.get("memory_used", 0),
+                "exit_code": result.get("exit_code", -1),
+            }
+
+            db.code_execution_events.insert_one({
+                "timestamp": datetime.utcnow(),
+                "event_type": "execution",
+                "source": "coding",
+                "language": language,
+                "execution_id": result.get("execution_id"),
+                "execution_time": result.get("execution_time", 0),
+                "memory_used": result.get("memory_used", 0),
+                "exit_code": result.get("exit_code", -1),
+                "status": execution_status,
+                "blocked": bool(result.get("blocked")),
+                "security_violations": result.get("security_violations", []),
+                "error": result.get("error", ""),
+                "request_body": request_payload,
+                "response_body": response_payload,
+                "ip": request.remote_addr or "unknown",
+                "user_agent": request.headers.get("User-Agent", ""),
+            })
+        except Exception:
+            pass
+
+        if result.get("success"):
+            return jsonify({"success": True, **result})
+        return jsonify({"success": False, **result}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -156,66 +228,23 @@ def submit_coding_test():
         return jsonify({"error": str(e)}), 500
 
 def execute_in_container(code, language, test_cases):
-    """Execute code in secure Docker container"""
-    try:
-        client = docker.from_env()
-        
-        # Language-specific container configuration
-        containers = {
-            'python': 'python:3.9-alpine',
-            'java': 'openjdk:11-alpine',
-            'javascript': 'node:16-alpine'
+    """Backward-compatible wrapper around the hardened compiler service."""
+    result = real_compiler_service.execute_code(code=code, language=language, input_data="")
+    if result.get("success"):
+        return {
+            "success": True,
+            "output": result.get("output", ""),
+            "test_results": [],
+            "execution_time": result.get("execution_time", 0),
+            "memory_used": result.get("memory_used", 0),
+            "execution_id": result.get("execution_id"),
         }
-        
-        if language not in containers:
-            return {"error": "Unsupported language"}
-        
-        # Create temporary file
-        with tempfile.NamedTemporaryFile(mode='w', suffix=f'.{get_file_extension(language)}', delete=False) as f:
-            f.write(code)
-            temp_file = f.name
-        
-        try:
-            # Run container with security restrictions
-            container = client.containers.run(
-                containers[language],
-                command=get_run_command(language, temp_file),
-                volumes={os.path.dirname(temp_file): {'bind': '/app', 'mode': 'ro'}},
-                working_dir='/app',
-                mem_limit='128m',
-                cpu_period=100000,
-                cpu_quota=50000,  # 50% CPU limit
-                network_mode='none',  # No network access
-                remove=True,
-                timeout=10,  # 10 second timeout
-                detach=False
-            )
-            
-            output = container.decode('utf-8')
-            
-            # Run test cases if provided
-            test_results = []
-            if test_cases:
-                for test in test_cases:
-                    test_result = run_test_case(code, language, test)
-                    test_results.append(test_result)
-            
-            return {
-                "success": True,
-                "output": output,
-                "test_results": test_results,
-                "execution_time": "< 10s"
-            }
-            
-        finally:
-            os.unlink(temp_file)
-            
-    except docker.errors.ContainerError as e:
-        return {"error": f"Runtime error: {e}"}
-    except docker.errors.ImageNotFound:
-        return {"error": "Language runtime not available"}
-    except Exception as e:
-        return {"error": f"Execution failed: {str(e)}"}
+    return {
+        "success": False,
+        "error": result.get("error", "Execution failed"),
+        "security_violations": result.get("security_violations", []),
+        "execution_id": result.get("execution_id"),
+    }
 
 def get_file_extension(language):
     extensions = {
