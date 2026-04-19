@@ -33,7 +33,7 @@ jobs:
           fi
 
       - name: Checkout logs repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
         with:
           repository: th30d4y/LOGS
           token: ${{ secrets.LOGS_REPO_PAT }}
@@ -102,7 +102,7 @@ jobs:
           set -euo pipefail
           cd logs-repo
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
           if [ -z "$(git status --porcelain)" ]; then
             echo "No log changes to commit"
