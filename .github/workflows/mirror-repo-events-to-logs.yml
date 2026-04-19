@@ -26,7 +26,7 @@ jobs:
           LOGS_REPO_PAT: ${{ secrets.LOGS_REPO_PAT }}
         run: |
           if [ -z "$LOGS_REPO_PAT" ]; then
-            echo "Missing required secret: LOGS_REPO_PAT"
+            echo "Missing required secret: LOGS_REPO_PAT. See README.md for setup instructions."
             exit 1
           fi
 
@@ -92,7 +92,7 @@ jobs:
           git config user.name "openlearnx-log-bot"
           git config user.email "openlearnx-log-bot@users.noreply.github.com"
 
-          if git diff --quiet; then
+          if [ -z "$(git status --porcelain)" ]; then
             echo "No log changes to commit"
             exit 0
           fi
