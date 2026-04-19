@@ -155,7 +155,59 @@ export default function DashboardPage() {
     return fakeMarkers.some((marker) => text.includes(marker))
   }
 
-  const realActivities = recentActivity.filter((item) => !isPlaceholderActivity(item))
+  const isEndpointText = (value: string) => /^(get|post|put|patch|delete)\s+\/api\//i.test(String(value || "").trim())
+
+  const normalizeActivityForUI = (item: ActivityData): ActivityData | null => {
+    const rawTitle = String(item.title || "")
+    const rawDescription = String(item.description || "")
+    const lower = `${rawTitle} ${rawDescription}`.toLowerCase()
+
+    if (lower.includes("/api/auth/verify-token")) {
+      return null
+    }
+
+    let title = rawTitle
+    let description = rawDescription
+
+    if (isEndpointText(rawTitle) || isEndpointText(rawDescription)) {
+      if (lower.includes("/api/quizzes") && lower.includes("join-room")) {
+        title = "Joined quiz room"
+        description = "Entered a live quiz room"
+      } else if (lower.includes("/api/quizzes") && (lower.includes("submit-answer") || lower.includes("/submit"))) {
+        title = "Attempted quiz question"
+        description = "Submitted a quiz answer"
+      } else if ((lower.includes("/api/exam") || lower.includes("/api/coding")) && lower.includes("join-exam")) {
+        title = "Joined coding exam"
+        description = "Entered a coding exam"
+      } else if ((lower.includes("/api/exam") || lower.includes("/api/coding")) && lower.includes("submit")) {
+        title = "Submitted coding solution"
+        description = "Submitted code for evaluation"
+      } else if (lower.includes("/api/courses") && lower.includes("complete")) {
+        title = "Completed lesson"
+        description = "Marked lesson as completed"
+      } else if (lower.includes("/api/courses")) {
+        title = "Course activity"
+        description = "Viewed or continued course learning"
+      } else if (lower.includes("/api/auth")) {
+        title = "Authentication activity"
+        description = "Signed in to account"
+      } else {
+        title = "Learning activity"
+        description = "Activity recorded"
+      }
+    }
+
+    return {
+      ...item,
+      title,
+      description,
+    }
+  }
+
+  const realActivities = recentActivity
+    .map((item) => normalizeActivityForUI(item))
+    .filter((item): item is ActivityData => Boolean(item))
+    .filter((item) => !isPlaceholderActivity(item))
   const visibleActivities = showAllActivities ? realActivities : realActivities.slice(0, 6)
 
   const handleProfileUpdate = async () => {

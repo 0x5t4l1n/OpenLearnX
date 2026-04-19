@@ -64,7 +64,7 @@ export default function CoursePage() {
 
   const logCourseActivity = async (action: "view" | "start" | "lesson_view", lessonId?: string) => {
     try {
-      const token = localStorage.getItem("openlearnx_jwt_token")
+      const token = localStorage.getItem("openlearnx_jwt_token") || localStorage.getItem("openlearnx_token")
       await fetch(`http://127.0.0.1:5000/api/courses/${courseId}/activity`, {
         method: "POST",
         headers: {
@@ -242,7 +242,7 @@ export default function CoursePage() {
 
   const markComplete = async () => {
     try {
-      const token = localStorage.getItem("openlearnx_jwt_token")
+      const token = localStorage.getItem("openlearnx_jwt_token") || localStorage.getItem("openlearnx_token")
       if (selectedLessonId) {
         await fetch(`http://127.0.0.1:5000/api/courses/${courseId}/lessons/${selectedLessonId}/complete`, {
           method: "POST",

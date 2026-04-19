@@ -27,7 +27,7 @@ export default function JoinExam() {
     setLoading(true)
 
     try {
-      const token = localStorage.getItem("openlearnx_jwt_token")
+      const token = localStorage.getItem("openlearnx_jwt_token") || localStorage.getItem("openlearnx_token")
       const storedUserRaw = localStorage.getItem("openlearnx_user")
       const storedUser = storedUserRaw ? JSON.parse(storedUserRaw) : null
 

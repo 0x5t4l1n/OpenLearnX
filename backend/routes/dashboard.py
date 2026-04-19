@@ -377,25 +377,53 @@ def get_recent_activity():
             if not any(segment in path for segment in ["/api/quizzes", "/api/exam", "/api/coding", "/api/courses", "/api/auth"]):
                 continue
 
+            if any(noise in path for noise in ["/api/auth/verify-token", "/api/health"]):
+                continue
+
             log_type = "activity"
-            title = f"{method} {path}"
-            description = f"API activity on {path}"
+            title = "Learning activity"
+            description = "Activity recorded"
             if "/api/quizzes" in path:
                 log_type = "quiz"
-                title = "Quiz activity"
-                description = f"{method} {path}"
+                if "/join-room" in path:
+                    title = "Joined quiz room"
+                    description = "Entered a live quiz room"
+                elif "/submit-answer" in path or "/submit" in path:
+                    title = "Attempted quiz question"
+                    description = "Submitted a quiz answer"
+                else:
+                    title = "Quiz activity"
+                    description = "Interacted with quizzes"
             elif "/api/exam" in path or "/api/coding" in path:
                 log_type = "coding"
-                title = "Coding activity"
-                description = f"{method} {path}"
+                if "/join-exam" in path:
+                    title = "Joined coding exam"
+                    description = "Entered a coding exam"
+                elif "/submit" in path:
+                    title = "Submitted coding solution"
+                    description = "Submitted code for evaluation"
+                else:
+                    title = "Coding activity"
+                    description = "Interacted with coding workspace"
             elif "/api/courses" in path:
                 log_type = "course"
-                title = "Course activity"
-                description = f"{method} {path}"
+                if "/activity" in path:
+                    title = "Course activity"
+                    description = "Visited or started a course lesson"
+                elif "/complete" in path:
+                    title = "Completed lesson"
+                    description = "Marked lesson as completed"
+                else:
+                    title = "Course activity"
+                    description = "Viewed course content"
             elif "/api/auth" in path:
                 log_type = "auth_login"
-                title = "Authentication activity"
-                description = f"{method} {path}"
+                if "/login" in path or "/verify" in path:
+                    title = "Authentication activity"
+                    description = "Signed in to account"
+                else:
+                    title = "Account activity"
+                    description = "Authentication event recorded"
 
             activities.append({
                 "id": str(item.get("_id", uuid.uuid4())),
