@@ -28,11 +28,12 @@ jobs:
           LOGS_REPO_PAT: ${{ secrets.LOGS_REPO_PAT }}
         run: |
           if [ -z "$LOGS_REPO_PAT" ]; then
-            echo "Missing required secret: LOGS_REPO_PAT. See README.md for setup instructions."
-            exit 1
+            echo "::warning::Missing required secret: LOGS_REPO_PAT. Skipping event mirroring. See README.md for setup instructions."
+            exit 0
           fi
 
       - name: Checkout logs repository
+        if: ${{ secrets.LOGS_REPO_PAT != '' }}
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
         with:
           repository: th30d4y/LOGS
@@ -40,6 +41,7 @@ jobs:
           path: logs-repo
 
       - name: Append event payload to daily log file
+        if: ${{ secrets.LOGS_REPO_PAT != '' }}
         env:
           SOURCE_REPOSITORY: ${{ github.repository }}
           SOURCE_EVENT_NAME: ${{ github.event_name }}
@@ -98,6 +100,7 @@ jobs:
           fi
 
       - name: Commit and push logs
+        if: ${{ secrets.LOGS_REPO_PAT != '' }}
         run: |
           set -euo pipefail
           cd logs-repo
