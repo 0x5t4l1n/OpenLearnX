@@ -57,6 +57,11 @@ jobs:
           mkdir -p "$LOG_DIR"
           LOG_FILE="$LOG_DIR/events.jsonl"
 
+          if [ ! -r "$GITHUB_EVENT_PATH" ]; then
+            echo "GitHub event payload file is missing or unreadable: $GITHUB_EVENT_PATH"
+            exit 1
+          fi
+
           jq -cn \
             --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --arg repository "$SOURCE_REPOSITORY" \
