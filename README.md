@@ -123,9 +123,10 @@ It captures repository events (push, pull request activity, stars, forks, create
 
 Add this repository secret in **OpenLearnX**:
 
-- `LOGS_REPO_PAT`: a Personal Access Token with write access to `th30d4y/LOGS` (for example, `contents:write` on that repo).
+- `LOGS_REPO_PAT`: a Personal Access Token that can write to `th30d4y/LOGS`.
+  - Fine-grained PAT: grant repository access to `th30d4y/LOGS` with **Contents: Read and write**.
+  - Classic PAT: use **repo** scope.
 
 ---
-
 
 

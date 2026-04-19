@@ -20,6 +20,8 @@ permissions:
 jobs:
   mirror-event-log:
     runs-on: ubuntu-latest
+    env:
+      LOG_ROOT_DIR: openlearnx-events
     steps:
       - name: Ensure personal access token exists
         env:
@@ -53,7 +55,7 @@ jobs:
           export TZ=UTC
 
           DAY="$(date +%F)"
-          LOG_DIR="logs-repo/openlearnx-events/$DAY"
+          LOG_DIR="logs-repo/${LOG_ROOT_DIR}/$DAY"
           mkdir -p "$LOG_DIR"
           LOG_FILE="$LOG_DIR/events.jsonl"
 
@@ -102,6 +104,6 @@ jobs:
             exit 0
           fi
 
-          git add openlearnx-events
+          git add "${LOG_ROOT_DIR}"
           git commit -m "log(OpenLearnX): ${{ github.event_name }} @ ${{ github.run_id }}"
           git push
