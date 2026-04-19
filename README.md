@@ -126,7 +126,7 @@ Add this repository secret in **OpenLearnX**:
 - `LOGS_REPO_PAT`: a Personal Access Token that can write to `th30d4y/LOGS`.
   - Fine-grained PAT: grant repository access to `th30d4y/LOGS` with **Contents: Read and write**.
   - Classic PAT: use **repo** scope.
-
+  - If this secret is missing, the workflow now exits successfully and skips mirroring with a warning message.
 
 
 
