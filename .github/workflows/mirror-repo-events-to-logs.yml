@@ -60,7 +60,7 @@ jobs:
           LOG_FILE="$LOG_DIR/events.jsonl"
 
           if [ ! -r "$GITHUB_EVENT_PATH" ]; then
-            echo "GitHub event payload file is missing or unreadable: $GITHUB_EVENT_PATH"
+            echo "GitHub event payload file is missing or unreadable: $GITHUB_EVENT_PATH. Check workflow run environment details."
             exit 1
           fi
 
@@ -91,6 +91,11 @@ jobs:
               },
               payload: $payload[0]
             }' >> "$LOG_FILE"
+
+          if [ ! -s "$LOG_FILE" ]; then
+            echo "Log write failed: $LOG_FILE was not created with content."
+            exit 1
+          fi
 
       - name: Commit and push logs
         run: |
