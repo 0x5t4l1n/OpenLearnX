@@ -48,7 +48,7 @@
     "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.5.1",
-    "ethers": "^6.15.0",
+    "ethers": "^6.16.0",
     "firebase": "^12.12.1",
     "geist": "^1.4.0",
     "input-otp": "^1.4.1",
