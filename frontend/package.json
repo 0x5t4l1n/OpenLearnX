@@ -50,7 +50,7 @@
     "embla-carousel-react": "^8.5.1",
     "ethers": "^6.16.0",
     "firebase": "^12.12.1",
-    "geist": "^1.4.0",
+    "geist": "^1.7.0",
     "input-otp": "^1.4.1",
     "lucide-react": "^0.454.0",
     "next": "^16.1.6",
