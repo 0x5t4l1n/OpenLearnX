@@ -440,14 +440,18 @@ def write_request_audit_log(response):
             auth_header = request.headers.get("Authorization", "")
             if auth_header.startswith("Bearer "):
                 token = auth_header.split(" ", 1)[1]
-                decoded = pyjwt.decode(
-                    token,
-                    options={"verify_signature": False},
-                    algorithms=["HS256", "RS256"],
-                )
-                auth_user_id = decoded.get("user_id") or decoded.get("sub") or decoded.get("uid")
-                auth_wallet_address = decoded.get("wallet_address")
-                auth_email = decoded.get("email")
+                jwt_secret = app.config.get('JWT_SECRET_KEY')
+                if jwt_secret:
+                    decoded = pyjwt.decode(
+                        token,
+                        jwt_secret,
+                        algorithms=["HS256", "RS256"],
+                    )
+                    auth_user_id = decoded.get("user_id") or decoded.get("sub") or decoded.get("uid")
+                    auth_wallet_address = decoded.get("wallet_address")
+                    auth_email = decoded.get("email")
+                else:
+                    auth_user_id = None
         except Exception:
             auth_user_id = None
 
