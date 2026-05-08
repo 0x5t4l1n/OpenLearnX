@@ -40,8 +40,8 @@ npm publish
 
 # Expected output:
 # npm notice 
-# npm notice 📦  openlearnx@2.0.4
-# npm notice filename:      openlearnx-2.0.4.tgz
+# npm notice 📦  @th30d4y/openlearnx@2.0.4
+# npm notice filename:      th30d4y-openlearnx-2.0.4.tgz
 # npm notice published:     [timestamp]
 # npm notice public
 ```
@@ -49,22 +49,22 @@ npm publish
 ### Step 5: Verify It's Published
 ```bash
 # Check on npm registry
-npm view openlearnx@2.0.4
+npm view @th30d4y/openlearnx@2.0.4
 
-# Or visit: https://www.npmjs.com/package/openlearnx
+# Or visit: https://www.npmjs.com/package/@th30d4y/openlearnx
 ```
 
 ## That's It! ✨
 
 Users can now install with:
 ```bash
-npm install openlearnx@2.0.4
+npm install @th30d4y/openlearnx@2.0.4
 ```
 
 ## What Was Published
 
 ```
-openlearnx v2.0.4
+@th30d4y/openlearnx v2.0.4
 ├─ Security Fix: JWT Signature Verification (GHSA-223g-f5mq-gw33)
 ├─ Framework: Next.js 16.1.6 + React 19.2.5
 ├─ Features: Adaptive quizzes, AI recommendations, Code compilation

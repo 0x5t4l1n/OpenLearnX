@@ -47,8 +47,8 @@ if [ ! -f "package.json" ]; then
 fi
 
 # Check for required fields
-if grep -q '"name": "openlearnx"' package.json; then
-    pass "Package name is correct: openlearnx"
+if grep -q '"name": "@th30d4y/openlearnx"' package.json; then
+    pass "Package name is correct: @th30d4y/openlearnx"
 else
     fail "Package name is incorrect or missing"
 fi
@@ -121,7 +121,7 @@ fi
 # Test 8: Dry run of package creation
 echo ""
 echo "📦 Test 8: Testing package creation (dry run)..."
-if npm pack --dry-run 2>/dev/null | grep -q "openlearnx@2.0.4"; then
+if npm pack --dry-run 2>&1 | grep -q "@th30d4y/openlearnx@2.0.4"; then
     pass "Package would be created successfully"
 else
     fail "Package creation test failed"
@@ -135,5 +135,5 @@ echo "🚀 Ready to publish:"
 echo "   npm publish"
 echo ""
 echo "Or test locally first:"
-echo "   npm pack && tar -tzf openlearnx-2.0.4.tgz | head -20"
+echo "   npm pack && tar -tzf th30d4y-openlearnx-2.0.4.tgz | head -20"
 echo ""

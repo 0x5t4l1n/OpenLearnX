@@ -137,15 +137,13 @@ npm login
 npm publish
 
 # 3. Verify
-npm view openlearnx@2.0.4
+npm view @th30d4y/openlearnx@2.0.4
 ```
 
 ## ✨ Installation Command for Users
 
 ```bash
-npm install openlearnx@2.0.4
-# or
-npm install @th30d4y/openlearnx@2.0.4  # if scoped
+npm install @th30d4y/openlearnx@2.0.4
 ```
 
 ## 🔒 Security Advisory Details
@@ -169,7 +167,7 @@ npm install @th30d4y/openlearnx@2.0.4  # if scoped
 
 - **GitHub Advisory:** https://github.com/th30d4y/OpenLearnX-ghsa-223g-f5mq-gw33/security/advisories/GHSA-223g-f5mq-gw33
 - **GitHub Repo:** https://github.com/th30d4y/OpenLearnX-ghsa-223g-f5mq-gw33
-- **NPM Registry:** https://www.npmjs.com/package/openlearnx
+- **NPM Registry:** https://www.npmjs.com/package/@th30d4y/openlearnx
 - **Advisory Fix Branch:** https://github.com/th30d4y/OpenLearnX-ghsa-223g-f5mq-gw33/tree/advisory-fix-1
 
 ## 📞 Next Steps

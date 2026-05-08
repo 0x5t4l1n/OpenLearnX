@@ -5,7 +5,7 @@ OpenLearnX is an AI-powered learning platform with adaptive quizzes, coding prac
 ## Install
 
 ```bash
-npm i openlearnx
+npm i @th30d4y/openlearnx@2.0.4
 ```
 
 ## Project

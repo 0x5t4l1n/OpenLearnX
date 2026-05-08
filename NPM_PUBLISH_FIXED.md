@@ -50,23 +50,23 @@ npm pack
 
 # You should see:
 # npm notice 
-# npm notice 📦  openlearnx@2.0.4
+# npm notice 📦  @th30d4y/openlearnx@2.0.4
 # npm notice === Tarball Contents ===
 # ...files being packaged...
 # npm notice === Tarball Details ===
 # ...
-# openlearnx-2.0.4.tgz
+# th30d4y-openlearnx-2.0.4.tgz
 
 # Extract and inspect
 mkdir test-package
 cd test-package
-tar -xzf ../openlearnx-2.0.4.tgz
+tar -xzf ../th30d4y-openlearnx-2.0.4.tgz
 ls -la package/
 # Verify only necessary files are included
 
 cd ..
 rm -rf test-package
-rm openlearnx-2.0.4.tgz
+rm th30d4y-openlearnx-2.0.4.tgz
 ```
 
 ### Step 3: Login to NPM
@@ -90,11 +90,11 @@ npm publish
 
 # Expected output:
 # npm notice 
-# npm notice 📦  openlearnx@2.0.4
+# npm notice 📦  @th30d4y/openlearnx@2.0.4
 # npm notice === Tarball Contents ===
-# npm notice name:          openlearnx
+# npm notice name:          @th30d4y/openlearnx
 # npm notice version:       2.0.4
-# npm notice filename:      openlearnx-2.0.4.tgz
+# npm notice filename:      th30d4y-openlearnx-2.0.4.tgz
 # npm notice published:     [timestamp]
 # npm notice public
 # npm notice access:        public
@@ -104,13 +104,13 @@ npm publish
 ### Step 5: Verify Publication
 ```bash
 # Check on NPM registry
-npm view openlearnx
+npm view @th30d4y/openlearnx
 
 # Check specific version
-npm view openlearnx@2.0.4
+npm view @th30d4y/openlearnx@2.0.4
 
 # Check package page
-# Visit: https://www.npmjs.com/package/openlearnx
+# Visit: https://www.npmjs.com/package/@th30d4y/openlearnx
 ```
 
 ### Step 6: Test Installation from Another Directory
@@ -122,12 +122,12 @@ cd openlearnx-test
 npm init -y
 
 # Install the published package
-npm install openlearnx@2.0.4
+npm install @th30d4y/openlearnx@2.0.4
 
 # Verify installation
-ls node_modules/openlearnx/
-npm list openlearnx
-# Should show: openlearnx@2.0.4
+ls node_modules/@th30d4y/openlearnx/
+npm list @th30d4y/openlearnx
+# Should show: @th30d4y/openlearnx@2.0.4
 ```
 
 ## 🔍 Troubleshooting
@@ -172,7 +172,7 @@ npm view [package-name]
 
 ## 📦 Package Contents
 
-The published `openlearnx@2.0.4` package includes:
+The published `@th30d4y/openlearnx@2.0.4` package includes:
 
 ```
 README.md
@@ -199,7 +199,7 @@ This release (`2.0.4`) contains critical security fixes:
 
 **All users should upgrade immediately:**
 ```bash
-npm install openlearnx@2.0.4
+npm install @th30d4y/openlearnx@2.0.4
 ```
 
 ## 📝 Post-Publishing
@@ -225,7 +225,7 @@ npm install openlearnx@2.0.4
 
 ## 🔗 Useful Links
 
-- **NPM Package:** https://www.npmjs.com/package/openlearnx
+- **NPM Package:** https://www.npmjs.com/package/@th30d4y/openlearnx
 - **GitHub Repository:** https://github.com/th30d4y/OpenLearnX
 - **Security Advisory:** https://github.com/th30d4y/OpenLearnX/security/advisories/GHSA-223g-f5mq-gw33
 - **Changelog:** [CHANGELOG.md](CHANGELOG.md)
