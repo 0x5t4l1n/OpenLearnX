@@ -1,28 +1,50 @@
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
+import os
 
 import jwt
 
 
-def _decode_token_unverified(token: str) -> Dict[str, Any]:
+def _decode_token_verified(token: str, secret: str = None) -> Dict[str, Any]:
+    """Decode and verify JWT token signature.
+    
+    Args:
+        token: The JWT token to decode
+        secret: The secret key for verification. If not provided, attempts to get from environment.
+        
+    Returns:
+        Decoded token payload, or empty dict if verification fails
+    """
+    if not secret:
+        secret = os.getenv('JWT_SECRET_KEY')
+    
+    if not secret:
+        return {}
+    
     try:
         return jwt.decode(
             token,
-            options={"verify_signature": False},
+            secret,
             algorithms=["HS256", "RS256"],
         )
     except Exception:
         return {}
 
 
-def resolve_user_identity(request, db=None) -> Dict[str, Optional[str]]:
-    """Best-effort identity resolution from auth header, headers, payload, and optional DB lookup."""
+def resolve_user_identity(request, db=None, jwt_secret: str = None) -> Dict[str, Optional[str]]:
+    """Best-effort identity resolution from auth header, headers, payload, and optional DB lookup.
+    
+    Args:
+        request: Flask request object
+        db: MongoDB database connection (optional)
+        jwt_secret: JWT secret for token verification. If not provided, attempts to get from environment.
+    """
     token = None
     auth_header = request.headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):
         token = auth_header.split(" ", 1)[1]
 
-    payload = _decode_token_unverified(token) if token else {}
+    payload = _decode_token_verified(token, jwt_secret) if token else {}
     request_json = request.get_json(silent=True) or {}
 
     user_id = (

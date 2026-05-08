@@ -25,14 +25,25 @@ def verify_wallet_authentication():
     if auth_header.startswith('Bearer '):
         try:
             token = auth_header.split(' ')[1]
-            # ✅ FIXED: Add algorithms parameter to fix JWT decode error
-            decoded = jwt.decode(
-                token, 
-                options={"verify_signature": False},  # For development
-                algorithms=["HS256", "RS256"]  # This fixes the JWT error
-            )
-            user_id = decoded.get('sub') or decoded.get('user_id') or decoded.get('uid') or decoded.get('wallet_address')
-            wallet_address = decoded.get('wallet_address') or user_id
+            # ✅ FIXED: Verify JWT signature using JWT_SECRET_KEY
+            from flask import current_app
+            jwt_secret = current_app.config.get('JWT_SECRET_KEY') or os.getenv('JWT_SECRET_KEY')
+            if jwt_secret:
+                decoded = jwt.decode(
+                    token, 
+                    jwt_secret,
+                    algorithms=["HS256", "RS256"]
+                )
+            else:
+                logger.error("JWT_SECRET_KEY not configured")
+                decoded = None
+            
+            if decoded:
+                user_id = decoded.get('sub') or decoded.get('user_id') or decoded.get('uid') or decoded.get('wallet_address')
+                wallet_address = decoded.get('wallet_address') or user_id
+            else:
+                user_id = None
+                wallet_address = None
             
             if user_id:
                 logger.info(f"✅ JWT authentication verified: {user_id}")
