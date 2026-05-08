@@ -47,18 +47,18 @@ npm publish
 
 # Expected output:
 # npm notice 
-# npm notice 📦  openlearnx@2.0.4
+# npm notice 📦  @th30d4y/openlearnx@2.0.4
 # npm notice === Tarball Contents ===
 # npm notice ...
 # npm notice === Dist Files ===
 # npm notice ...
 # npm notice === Tarball Details ===
-# npm notice name:          openlearnx
+# npm notice name:          @th30d4y/openlearnx
 # npm notice version:       2.0.4
-# npm notice filename:      openlearnx-2.0.4.tgz
+# npm notice filename:      th30d4y-openlearnx-2.0.4.tgz
 # npm notice published:     [timestamp]
 # npm notice public
-# npm notice url:           https://www.npmjs.com/package/openlearnx
+# npm notice url:           https://www.npmjs.com/package/@th30d4y/openlearnx
 # npm notice access:        public
 # npm notice...
 ```
@@ -67,13 +67,13 @@ npm publish
 
 ```bash
 # Check the package on NPM registry
-npm view openlearnx
+npm view @th30d4y/openlearnx
 
 # Check specific version
-npm view openlearnx@2.0.4
+npm view @th30d4y/openlearnx@2.0.4
 
 # You should see:
-# openlearnx@2.0.4 | ISC | deps: 39 | versions: 2
+# @th30d4y/openlearnx@2.0.4 | ISC | deps: 39 | versions: 2
 ```
 
 ## Step 5: Test Installation
@@ -82,11 +82,11 @@ npm view openlearnx@2.0.4
 # Test in a clean directory
 mkdir /tmp/test-openlearnx && cd /tmp/test-openlearnx
 npm init -y
-npm install openlearnx@2.0.4
+npm install @th30d4y/openlearnx@2.0.4
 
 # Verify the installation
-npm list openlearnx
-# Should show: openlearnx@2.0.4
+npm list @th30d4y/openlearnx
+# Should show: @th30d4y/openlearnx@2.0.4
 ```
 
 ## Alternative: Using npm ci (for CI/CD)
@@ -111,7 +111,7 @@ npm publish
 ### Issue: "This version has already been published"
 **Solution:** 
 - Use a different version number
-- Use `npm unpublish openlearnx@2.0.4` (if allowed) and republish
+- Use `npm unpublish @th30d4y/openlearnx@2.0.4` (if allowed) and republish
 
 ### Issue: "npm notice... WARN"
 **Solution:** These are usually non-critical warnings. Review them but the publish should still succeed.
@@ -129,13 +129,13 @@ npm publish
    - Recommend immediate upgrade
 
 3. **Verify in Package Managers:**
-   - NPM: https://www.npmjs.com/package/openlearnx
+   - NPM: https://www.npmjs.com/package/@th30d4y/openlearnx
    - Check latest version shows 2.0.4
 
 ## Package Details
 
 ```
-Package Name: openlearnx
+Package Name: @th30d4y/openlearnx
 Version: 2.0.4
 Description: AI-powered learning platform with adaptive quizzes, coding practice, course tracking, and dashboard analytics
 Repository: https://github.com/th30d4y/OpenLearnX
@@ -146,10 +146,10 @@ Registry: https://registry.npmjs.org
 
 ```bash
 # Install the latest version (2.0.4)
-npm install openlearnx@2.0.4
+npm install @th30d4y/openlearnx@2.0.4
 
 # Or install the latest
-npm install openlearnx@latest
+npm install @th30d4y/openlearnx@latest
 ```
 
 ---
