@@ -8,6 +8,9 @@ OpenLearnX is an AI-powered learning platform with adaptive quizzes, coding prac
 npm i @th30d4y/openlearnx@2.0.4
 ```
 
+> Official package name: `@th30d4y/openlearnx` (scoped).  
+> Unscoped `openlearnx` is not the official package for this repository.
+
 ## Project
 
 This package contains the OpenLearnX frontend (Next.js).

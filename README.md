@@ -2,6 +2,16 @@
 
 **OpenLearnX** is an open-source, decentralized learning and assessment platform that combines adaptive AI-driven quizzes, real-time code execution, and blockchain-based NFT certificates to create a transparent, verifiable, and personalized educational experience.
 
+## Official npm Package
+
+The official package for this repository is:
+
+```bash
+npm install @th30d4y/openlearnx
+```
+
+Do **not** use the unscoped `openlearnx` package name.
+
 ## Features
 
 - **Adaptive Learning** – Questions dynamically adjust in real-time based on learner performance using IRT (Item Response Theory) and AI models
