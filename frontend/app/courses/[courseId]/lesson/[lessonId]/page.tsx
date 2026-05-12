@@ -59,6 +59,7 @@ export default function LessonDetailPage() {
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [resolvedCourseId, setResolvedCourseId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isAuthLoading && !user) {
@@ -84,9 +85,11 @@ export default function LessonDetailPage() {
       const courseData = courseResponse.data
       console.log('✅ Course data loaded:', courseData)
       setCourse(courseData)
+      const targetId = courseData.id || courseId
+      setResolvedCourseId(targetId)
 
       // Fetch modules for the course
-      const modulesResponse = await fetch(`http://127.0.0.1:5000/api/courses/${courseId}/modules`, {
+      const modulesResponse = await fetch(`http://127.0.0.1:5000/api/courses/${targetId}/modules`, {
         headers: {
           'Content-Type': 'application/json'
         }
@@ -144,7 +147,7 @@ export default function LessonDetailPage() {
         } else if (lessonId) {
           console.log('❌ Lesson not found:', lessonId)
           toast.error("Lesson not found")
-          router.replace(`/courses/${courseId}`)
+          router.replace(`/courses/${targetId}`)
         }
       } else {
         throw new Error('Failed to fetch modules')

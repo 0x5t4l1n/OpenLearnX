@@ -28,15 +28,31 @@ def verify_wallet_authentication():
             # ✅ FIXED: Verify JWT signature using JWT_SECRET_KEY
             from flask import current_app
             jwt_secret = current_app.config.get('JWT_SECRET_KEY') or os.getenv('JWT_SECRET_KEY')
+            fallback_secret = os.getenv('JWT_SECRET')
+            decoded = None
+
             if jwt_secret:
-                decoded = jwt.decode(
-                    token, 
-                    jwt_secret,
-                    algorithms=["HS256", "RS256"]
-                )
-            else:
-                logger.error("JWT_SECRET_KEY not configured")
-                decoded = None
+                try:
+                    decoded = jwt.decode(
+                        token,
+                        jwt_secret,
+                        algorithms=["HS256", "RS256"],
+                    )
+                except Exception as e:
+                    logger.warning(f"⚠️ JWT decode failed with JWT_SECRET_KEY: {e}")
+
+            if decoded is None and fallback_secret:
+                try:
+                    decoded = jwt.decode(
+                        token,
+                        fallback_secret,
+                        algorithms=["HS256", "RS256"],
+                    )
+                except Exception as e:
+                    logger.warning(f"⚠️ JWT decode failed with JWT_SECRET: {e}")
+
+            if decoded is None:
+                logger.error("JWT secrets not configured or token invalid")
             
             if decoded:
                 user_id = decoded.get('sub') or decoded.get('user_id') or decoded.get('uid') or decoded.get('wallet_address')
@@ -140,13 +156,33 @@ def get_comprehensive_stats():
                 "wallet_address": wallet_address
             })
         
+        identity_candidates = {str(user_id)}
+        if wallet_address:
+            identity_candidates.add(str(wallet_address).lower())
+
+        # Resolve user identity aliases to avoid missing data across auth methods.
+        user_doc = None
+        try:
+            maybe_oid = ObjectId(str(user_id))
+            user_doc = db.users.find_one({"_id": maybe_oid})
+        except Exception:
+            user_doc = db.users.find_one({"wallet_address": str(user_id).lower()}) or db.users.find_one({"email": str(user_id).lower()})
+
+        if user_doc:
+            if user_doc.get("_id"):
+                identity_candidates.add(str(user_doc.get("_id")))
+            if user_doc.get("wallet_address"):
+                identity_candidates.add(str(user_doc.get("wallet_address")).lower())
+            if user_doc.get("email"):
+                identity_candidates.add(str(user_doc.get("email")).lower())
+
         # ✅ FETCH ONLY REAL DATA FROM MONGODB
-        user_stats = db.user_stats.find_one({"user_id": user_id})
-        courses = list(db.user_courses.find({"user_id": user_id}))
-        quizzes = list(db.user_quizzes.find({"user_id": user_id}))
-        coding_submissions = list(db.user_submissions.find({"user_id": user_id}))
-        blockchain_data = db.user_blockchain.find_one({"user_id": user_id})
-        achievements = list(db.user_achievements.find({"user_id": user_id}))
+        user_stats = db.user_stats.find_one({"user_id": {"$in": list(identity_candidates)}})
+        courses = list(db.user_courses.find({"user_id": {"$in": list(identity_candidates)}}))
+        quizzes = list(db.user_quizzes.find({"user_id": {"$in": list(identity_candidates)}}))
+        coding_submissions = list(db.user_submissions.find({"user_id": {"$in": list(identity_candidates)}}))
+        blockchain_data = db.user_blockchain.find_one({"user_id": {"$in": list(identity_candidates)}})
+        achievements = list(db.user_achievements.find({"user_id": {"$in": list(identity_candidates)}}))
         
         # Convert ObjectIds to strings for JSON serialization
         for collection in [courses, quizzes, coding_submissions, achievements]:
@@ -185,7 +221,8 @@ def get_comprehensive_stats():
         
         # Real calculations (no fake data)
         total_xp = calculate_real_total_xp(courses, quizzes, coding_submissions, achievements)
-        courses_completed = len([c for c in courses if c.get('completed', False)])
+        completed_courses = len([c for c in courses if c.get('completed', False)])
+        courses_completed = len(courses) if courses else completed_courses
         coding_problems_solved = len(coding_submissions)
         quiz_accuracy = calculate_real_quiz_accuracy(quizzes)
         coding_streak = calculate_real_coding_streak(coding_submissions)
@@ -197,6 +234,7 @@ def get_comprehensive_stats():
         comprehensive_stats = {
             "total_xp": total_xp,
             "courses_completed": courses_completed,
+            "completed_courses": completed_courses,
             "coding_problems_solved": coding_problems_solved,
             "quiz_accuracy": quiz_accuracy,
             "streak_data": {
@@ -206,7 +244,7 @@ def get_comprehensive_stats():
             },
             "total_courses": len(courses),
             "total_quizzes": len(quizzes),
-            "global_rank": calculate_real_global_rank(user_stats, user_id) if user_stats else 0,
+            "global_rank": calculate_real_global_rank(user_stats, user_id, total_xp),
             "weekly_activity": weekly_activity,
             "monthly_goals": {
                 "target": user_stats.get('monthly_target', 0) if user_stats else 0,
@@ -766,10 +804,10 @@ def get_empty_stats(wallet_address=None):
 
 def calculate_real_total_xp(courses, quizzes, submissions, achievements):
     """Calculate total XP from ONLY real MongoDB data"""
-    course_xp = sum([c.get('points', 0) for c in courses if c.get('completed', False)])
-    quiz_xp = sum([q.get('points', 0) for q in quizzes])
-    coding_xp = sum([s.get('points_earned', 0) for s in submissions])
-    achievement_xp = sum([a.get('points', 0) for a in achievements])
+    course_xp = sum([c.get('points', 0) or 0 for c in courses if c.get('completed', False)])
+    quiz_xp = sum([q.get('points', q.get('score', 0) or 0) or 0 for q in quizzes])
+    coding_xp = sum([s.get('points_earned', s.get('score', 0) or 0) or 0 for s in submissions])
+    achievement_xp = sum([a.get('points', 0) or 0 for a in achievements])
     
     total = course_xp + quiz_xp + coding_xp + achievement_xp
     logger.info(f"📊 Real XP calculation: courses={course_xp}, quizzes={quiz_xp}, coding={coding_xp}, achievements={achievement_xp}, total={total}")
@@ -853,16 +891,17 @@ def calculate_real_quiz_accuracy(quizzes):
     logger.info(f"📊 Real quiz accuracy: {accuracy}% from {len(quizzes)} quizzes")
     return accuracy
 
-def calculate_real_global_rank(user_stats, user_id):
+def calculate_real_global_rank(user_stats, user_id, total_xp=None):
     """Calculate global rank from ONLY real MongoDB data"""
-    if not user_stats:
-        return 0
-    
-    user_xp = user_stats.get('total_xp', 0)
-    
+    user_xp = None
+    if user_stats:
+        user_xp = user_stats.get('total_xp', 0)
+    if user_xp is None:
+        user_xp = total_xp or 0
+
     try:
         higher_ranked = db.user_stats.count_documents({"total_xp": {"$gt": user_xp}})
-        rank = higher_ranked + 1
+        rank = higher_ranked + 1 if user_xp > 0 else 0
         logger.info(f"📊 Real global rank: {rank} (XP: {user_xp})")
         return rank
     except Exception as e:

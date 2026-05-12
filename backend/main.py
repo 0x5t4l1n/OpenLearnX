@@ -47,6 +47,16 @@ except ImportError:
     DASHBOARD_AVAILABLE = False
     print("⚠️ Dashboard routes not available")
 
+# ✅ Public modules/lessons endpoints for course pages
+try:
+    from routes.modules_public import bp as modules_public_bp
+    MODULES_PUBLIC_AVAILABLE = True
+    print("✅ Public modules routes available")
+except ImportError:
+    modules_public_bp = None
+    MODULES_PUBLIC_AVAILABLE = False
+    print("⚠️ Public modules routes not available")
+
 # ✅ CRITICAL: Import certificate blueprint
 try:
     from routes.certificate import bp as certificate_bp
@@ -64,6 +74,7 @@ blueprints_to_register = [
     ('certificate', '/api/certificate'),  # ✅ Use blueprint version
     ('dashboard', '/api/dashboard'),
     ('courses', '/api/courses'),
+    ('modules_public', '/api/modules'),
     ('quizzes', '/api/quizzes'),
     ('admin', '/api/admin'),
     ('exam', '/api/exam'),

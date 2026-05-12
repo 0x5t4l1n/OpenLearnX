@@ -202,8 +202,24 @@ def admin_dashboard():
     """Get admin dashboard statistics"""
     try:
         total_courses = db.courses.count_documents({})
-        total_lessons = db.lessons.count_documents({})
-        total_modules = db.modules.count_documents({})
+        
+        # ✅ FIXED: Count modules and lessons from embedded course structure
+        total_modules = 0
+        total_lessons = 0
+        courses = list(db.courses.find({}, {"modules": 1}))
+        for course in courses:
+            modules = course.get("modules", [])
+            total_modules += len(modules)
+            for module in modules:
+                lessons = module.get("lessons", [])
+                total_lessons += len(lessons)
+        
+        # Fallback to separate collections if they exist
+        if total_modules == 0:
+            total_modules = db.modules.count_documents({})
+        if total_lessons == 0:
+            total_lessons = db.lessons.count_documents({})
+        
         total_users = db.users.count_documents({})
         total_logs = db.security_logs.count_documents({})
         active_students = db.users.count_documents({
@@ -1159,14 +1175,47 @@ def get_admin_courses():
     """Get all courses for admin management"""
     try:
         print("Fetching courses from database...")
-        courses = list(db.courses.find({}, {"_id": 0}))
+        courses = list(db.courses.find({}))
         print(f"Found {len(courses)} courses")
+
+        def normalize_title(value):
+            return " ".join(str(value or "").lower().split())
+
+        def course_score(item):
+            score = 0
+            for field in ["subject", "difficulty", "mentor", "description", "video_url", "embed_url"]:
+                if item.get(field):
+                    score += 1
+            if isinstance(item.get("modules"), list):
+                score += min(len(item.get("modules", [])), 5)
+            return score
         
         for course in courses:
+            if not course.get("id") and "_id" in course:
+                course["id"] = str(course["_id"])
+            if "_id" in course:
+                del course["_id"]
+            if not course.get("title"):
+                course["title"] = course.get("name", "")
+            if not course.get("subject"):
+                course["subject"] = course.get("category", course.get("topic", ""))
+            if not course.get("difficulty"):
+                course["difficulty"] = course.get("level", "")
+            if not course.get("mentor"):
+                course["mentor"] = course.get("instructor", course.get("instructor_name", course.get("mentor_name", "")))
+            if not course.get("description"):
+                course["description"] = course.get("summary", "")
             course["students"] = course.get("students", 0)
             course["status"] = "published"
-            
-        return jsonify(courses)
+
+        deduped = {}
+        for course in courses:
+            key = normalize_title(course.get("title")) or course.get("id")
+            existing = deduped.get(key)
+            if not existing or course_score(course) > course_score(existing):
+                deduped[key] = course
+
+        return jsonify(list(deduped.values()))
     except Exception as e:
         print(f"Error fetching courses: {str(e)}")
         return jsonify({"error": str(e)}), 500
@@ -1261,16 +1310,27 @@ def delete_course(course_id):
     try:
         print(f"Deleting course: {course_id}")
         
+        course = db.courses.find_one({"id": course_id})
+        if not course:
+            try:
+                course = db.courses.find_one({"_id": ObjectId(course_id)})
+            except Exception:
+                course = None
+
+        if not course:
+            return jsonify({"error": "Course not found"}), 404
+
+        course_key = course.get("id") or str(course.get("_id"))
+
         # Delete related lessons first
-        lesson_result = db.lessons.delete_many({"course_id": course_id})
+        lesson_result = db.lessons.delete_many({"course_id": course_key})
         print(f"Deleted {lesson_result.deleted_count} related lessons")
         
         # Delete related modules
-        module_result = db.modules.delete_many({"course_id": course_id})
+        module_result = db.modules.delete_many({"course_id": course_key})
         print(f"Deleted {module_result.deleted_count} related modules")
-        
-        # Delete the course
-        result = db.courses.delete_one({"id": course_id})
+
+        result = db.courses.delete_one({"_id": course.get("_id")})
         
         if result.deleted_count == 0:
             return jsonify({"error": "Course not found"}), 404
@@ -1690,8 +1750,23 @@ def get_admin_stats():
     """Get detailed admin statistics"""
     try:
         total_courses = db.courses.count_documents({})
-        total_lessons = db.lessons.count_documents({})
-        total_modules = db.modules.count_documents({})
+        
+        # ✅ FIXED: Count modules and lessons from embedded course structure
+        total_modules = 0
+        total_lessons = 0
+        courses = list(db.courses.find({}, {"modules": 1}))
+        for course in courses:
+            modules = course.get("modules", [])
+            total_modules += len(modules)
+            for module in modules:
+                lessons = module.get("lessons", [])
+                total_lessons += len(lessons)
+        
+        # Fallback to separate collections if they exist
+        if total_modules == 0:
+            total_modules = db.modules.count_documents({})
+        if total_lessons == 0:
+            total_lessons = db.lessons.count_documents({})
         
         # Course statistics by subject
         pipeline = [

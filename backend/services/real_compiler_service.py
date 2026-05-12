@@ -229,7 +229,6 @@ class RealCompilerService:
             "compile",
             "__import__",
             "open",
-            "input",
             "globals",
             "locals",
             "vars",

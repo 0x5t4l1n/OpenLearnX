@@ -15,7 +15,7 @@ type Course = {
   subject: string
   difficulty: string
   mentor: string
-  students: number
+  students?: number
   embed_url?: string
   video_url?: string
 }
@@ -55,6 +55,9 @@ export default function CoursePage() {
   const [loading, setLoading] = useState(true)
   const [modulesLoading, setModulesLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [resolvedCourseId, setResolvedCourseId] = useState<string | null>(null)
+  const [isRegistering, setIsRegistering] = useState(false)
+  const [isRegistered, setIsRegistered] = useState(false)
 
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null)
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null)
@@ -62,10 +65,15 @@ export default function CoursePage() {
   const [completed, setCompleted] = useState(false)
   const [showCertificateModal, setShowCertificateModal] = useState(false)
 
-  const logCourseActivity = async (action: "view" | "start" | "lesson_view", lessonId?: string) => {
+  const logCourseActivity = async (
+    action: "view" | "start" | "lesson_view",
+    lessonId?: string,
+    overrideCourseId?: string,
+  ) => {
     try {
       const token = localStorage.getItem("openlearnx_jwt_token") || localStorage.getItem("openlearnx_token")
-      await fetch(`http://127.0.0.1:5000/api/courses/${courseId}/activity`, {
+      const targetCourseId = overrideCourseId || courseId
+      await fetch(`http://127.0.0.1:5000/api/courses/${targetCourseId}/activity`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -89,15 +97,36 @@ export default function CoursePage() {
     }
   }, [authLoading, user, courseId, router])
 
+  const fetchRegistrationStatus = async (targetId: string) => {
+    try {
+      const token = localStorage.getItem("openlearnx_jwt_token") || localStorage.getItem("openlearnx_token")
+      const resp = await fetch(`http://127.0.0.1:5000/api/courses/${targetId}/registration`, {
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      })
+      if (!resp.ok) return
+      const data = await resp.json()
+      if (data?.success) setIsRegistered(Boolean(data.registered))
+    } catch {
+      // Ignore registration fetch errors.
+    }
+  }
+
   const fetchCourseData = async () => {
     setLoading(true)
     setError(null)
 
     try {
       const courseResponse = await api.get<Course>(`/api/courses/${courseId}?t=${Date.now()}`)
-      setCourse(courseResponse.data)
-      logCourseActivity("view")
-      await fetchModulesAndLessons(courseId)
+      const courseData = courseResponse.data
+      const targetId = courseData.id || courseId
+      setCourse(courseData)
+      setResolvedCourseId(targetId)
+      logCourseActivity("view", undefined, targetId)
+      await fetchRegistrationStatus(targetId)
+      await fetchModulesAndLessons(targetId)
     } catch (err: any) {
       setError(err.message || "Failed to load course data.")
       toast.error("Failed to load course data.")
@@ -201,7 +230,31 @@ export default function CoursePage() {
     setSelectedModuleId(moduleId)
     setSelectedLessonId(lessonId)
     setExpandedModules((prev) => ({ ...prev, [moduleId]: true }))
-    logCourseActivity("lesson_view", lessonId)
+    logCourseActivity("lesson_view", lessonId, resolvedCourseId || undefined)
+  }
+
+  const handleRegister = async () => {
+    if (!resolvedCourseId) return
+    setIsRegistering(true)
+    try {
+      const token = localStorage.getItem("openlearnx_jwt_token") || localStorage.getItem("openlearnx_token")
+      const resp = await fetch(`http://127.0.0.1:5000/api/courses/${resolvedCourseId}/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      })
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: "Registration failed" }))
+        toast.error(err.error || "Registration failed")
+        return
+      }
+      setIsRegistered(true)
+      toast.success("Registered for this course")
+    } finally {
+      setIsRegistering(false)
+    }
   }
 
   const getCurrentLesson = (): Lesson | null => {
@@ -308,9 +361,18 @@ export default function CoursePage() {
         <div className="w-full px-6 sm:px-8 lg:px-12 py-5 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">{course.title}</h1>
-            <p className="text-sm text-gray-600 dark:text-gray-300">by {course.mentor}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">by {course.mentor || "OpenLearnX Instructor"}</p>
           </div>
           <div className="flex flex-wrap items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+            {!isRegistered && (
+              <button
+                onClick={handleRegister}
+                disabled={isRegistering}
+                className="rounded-full bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+              >
+                {isRegistering ? "Registering..." : "Register"}
+              </button>
+            )}
             <div className="inline-flex items-center gap-2 rounded-full bg-gray-100 dark:bg-gray-700 px-3 py-1.5">
               <BookOpen className="w-4 h-4" />
               <span>{modules.length} modules</span>
@@ -321,7 +383,7 @@ export default function CoursePage() {
             </div>
             <div className="inline-flex items-center gap-2 rounded-full bg-gray-100 dark:bg-gray-700 px-3 py-1.5">
               <Users className="w-4 h-4" />
-              <span>{course.students.toLocaleString()} students</span>
+              <span>{Number(course.students || 0).toLocaleString()} students</span>
             </div>
           </div>
         </div>

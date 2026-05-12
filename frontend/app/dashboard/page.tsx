@@ -41,6 +41,16 @@ type ActivityData = {
   points_earned?: number
 }
 
+type CertificateItem = {
+  certificate_id: string
+  course_title: string
+  completion_date: string
+  instructor_name?: string
+  mentor_name?: string
+  public_url?: string
+  unique_url?: string
+}
+
 export default function DashboardPage() {
   const { user, walletConnected, logout, authMethod } = useAuth()
   const router = useRouter()
@@ -58,6 +68,7 @@ export default function DashboardPage() {
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [showAllActivities, setShowAllActivities] = useState(false)
   const [recentActivity, setRecentActivity] = useState<ActivityData[]>([])
+  const [certificates, setCertificates] = useState<CertificateItem[]>([])
   const [profileData, setProfileData] = useState({
     name: user?.name || '',
     bio: user?.bio || '',
@@ -93,13 +104,13 @@ export default function DashboardPage() {
   const fetchRealStats = async () => {
     setIsLoadingStats(true)
     try {
-      const [statsResponse, activityResponse] = await Promise.all([
+      const [statsResult, activityResult] = await Promise.allSettled([
         api.get("/api/dashboard/comprehensive-stats"),
         api.get("/api/dashboard/recent-activity"),
       ])
 
-      if (statsResponse.data.success && statsResponse.data.data) {
-        const data = statsResponse.data.data
+      if (statsResult.status === "fulfilled" && statsResult.value.data.success && statsResult.value.data.data) {
+        const data = statsResult.value.data.data
         const streakData = data.streak_data || {}
         setStats({
           coursesCompleted: data.courses_completed || 0,
@@ -113,12 +124,25 @@ export default function DashboardPage() {
         })
       }
 
-      if (activityResponse.data?.success && Array.isArray(activityResponse.data?.data)) {
-        setRecentActivity(activityResponse.data.data)
+      if (activityResult.status === "fulfilled" && activityResult.value.data?.success && Array.isArray(activityResult.value.data?.data)) {
+        setRecentActivity(activityResult.value.data.data)
+      }
+
+      if (user?.id) {
+        const certUserId = user.wallet_address || user.id
+        try {
+          const certResponse = await api.get(`/api/certificate/user/${certUserId}`)
+          if (certResponse.data?.success && Array.isArray(certResponse.data?.certificates)) {
+            setCertificates(certResponse.data.certificates)
+          } else if (Array.isArray(certResponse.data)) {
+            setCertificates(certResponse.data)
+          }
+        } catch {
+          // Ignore certificate fetch errors.
+        }
       }
     } catch (error: any) {
       console.error("Failed to fetch dashboard stats:", error)
-      // Keep default values if fetch fails
       toast.error("Failed to load dashboard data")
     } finally {
       setIsLoadingStats(false)
@@ -876,6 +900,49 @@ export default function DashboardPage() {
                   <div className="text-sm text-gray-500 dark:text-gray-400">No recent activity yet.</div>
                 )}
               </div>
+            </div>
+          </div>
+
+          {/* Certificates */}
+          <div className="lg:col-span-3">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Your Certificates</h3>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {certificates.length} total
+                </span>
+              </div>
+
+              {certificates.length === 0 ? (
+                <div className="text-sm text-gray-500 dark:text-gray-400">No certificates yet.</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {certificates.map((cert) => (
+                    <a
+                      key={cert.certificate_id}
+                      href={cert.public_url || cert.unique_url || `/certificate/${cert.certificate_id}`}
+                      className="group rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-500 transition-all"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-indigo-600">
+                            {cert.course_title || "Course Certificate"}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Instructor: {cert.instructor_name || cert.mentor_name || "OpenLearnX"}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Completed: {new Date(cert.completion_date).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="text-xs font-mono text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded">
+                          {cert.certificate_id}
+                        </div>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -36,10 +36,10 @@ export function CertificateModal({
   courseMentor,
   courseId,
   userId,
-  walletId
+  walletId,
 }: CertificateModalProps) {
-  const [step, setStep] = useState<'input' | 'generating' | 'completed'>('input')
-  const [userName, setUserName] = useState('')
+  const [step, setStep] = useState<"input" | "generating" | "completed">("input")
+  const [userName, setUserName] = useState("")
   const [certificate, setCertificate] = useState<Certificate | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -52,31 +52,27 @@ export function CertificateModal({
     }
 
     setLoading(true)
-    setStep('generating')
+    setStep("generating")
 
     try {
-      console.log('🎓 Generating certificate for STUDENT:', userName.trim())
-
-      const response = await fetch('http://127.0.0.1:5000/api/certificate/mint', {
-        method: 'POST',
+      const response = await fetch("http://127.0.0.1:5000/api/certificate/mint", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           user_name: userName.trim(),
           course_id: courseId,
           wallet_id: walletId,
           user_id: userId,
-          course_title: courseTitle
-        })
+          course_title: courseTitle,
+        }),
       })
 
       if (response.ok) {
         const data = await response.json()
-        console.log('✅ Certificate API response:', data)
-        
         const certificateData = data.certificate
-        
+
         const certificateWithWallet = {
           certificate_id: certificateData.certificate_id,
           token_id: certificateData.token_id,
@@ -89,25 +85,20 @@ export function CertificateModal({
           share_code: certificateData.share_code,
           public_url: certificateData.public_url,
           unique_url: certificateData.unique_url,
-          message: certificateData.message
+          message: certificateData.message,
         }
-        
-        console.log('🎯 Certificate data:', certificateWithWallet)
-        console.log('🆔 Unique Certificate ID:', certificateWithWallet.certificate_id)
-        
+
         setCertificate(certificateWithWallet)
-        setStep('completed')
-        toast.success(`Certificate generated for ${certificateWithWallet.user_name}! 🎉`)
+        setStep("completed")
+        toast.success(`Certificate generated for ${certificateWithWallet.user_name}!`)
       } else {
         const error = await response.json()
-        console.error('❌ Certificate error:', error)
         toast.error(error.error || "Failed to generate certificate")
-        setStep('input')
+        setStep("input")
       }
     } catch (error) {
-      console.error('❌ Certificate generation error:', error)
       toast.error("Failed to generate certificate. Please check your connection.")
-      setStep('input')
+      setStep("input")
     } finally {
       setLoading(false)
     }
@@ -115,7 +106,7 @@ export function CertificateModal({
 
   const handleDownloadCertificate = async () => {
     if (!certificate) return
-    
+
     try {
       const certificateHTML = `
         <!DOCTYPE html>
@@ -125,51 +116,48 @@ export function CertificateModal({
           <meta charset="UTF-8">
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;500;600&display=swap');
-            
             body { 
               font-family: 'Inter', sans-serif; 
               margin: 0; 
               padding: 40px; 
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+              background: #f1f5f9; 
               min-height: 100vh;
               display: flex;
               align-items: center;
               justify-content: center;
             }
-            
             .certificate { 
               background: white; 
-              max-width: 800px; 
+              max-width: 960px; 
               width: 100%;
               margin: 0 auto; 
-              padding: 60px; 
-              border-radius: 20px; 
-              box-shadow: 0 25px 50px rgba(0,0,0,0.15); 
+              padding: 70px; 
+              border-radius: 6px; 
+              box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15); 
               text-align: center; 
               position: relative;
-              border: 8px solid #4f46e5;
+              border: 4px solid #1f2937;
             }
-            
             .title { 
               font-family: 'Playfair Display', serif;
-              font-size: 42px; 
+              font-size: 40px; 
               font-weight: 700; 
-              color: #4f46e5; 
-              margin: 20px 0; 
+              color: #0f172a; 
+              margin: 12px 0 20px; 
+              text-transform: uppercase;
+              letter-spacing: 0.15em;
             }
-            
             .student-name { 
               font-family: 'Playfair Display', serif;
-              font-size: 48px; 
-              color: #1f2937; 
+              font-size: 46px; 
+              color: #0f172a; 
               font-weight: 700; 
-              margin: 40px 0; 
-              padding: 20px 0;
-              border-top: 3px solid #4f46e5;
-              border-bottom: 3px solid #4f46e5;
+              margin: 30px 0; 
+              padding: 16px 0;
+              border-top: 2px solid #cbd5f5;
+              border-bottom: 2px solid #cbd5f5;
               text-transform: capitalize;
             }
-            
             .course-title { 
               font-family: 'Playfair Display', serif;
               font-size: 28px; 
@@ -178,16 +166,14 @@ export function CertificateModal({
               font-weight: 600;
               font-style: italic;
             }
-            
             .wallet-container { 
-              background: #f3f4f6;
-              border: 2px dashed #9333ea; 
-              border-radius: 12px; 
-              padding: 15px; 
+              background: #f8fafc;
+              border: 1px dashed #64748b; 
+              border-radius: 6px; 
+              padding: 12px; 
               margin: 25px auto; 
-              max-width: 500px;
+              max-width: 560px;
             }
-            
             .wallet-address { 
               font-size: 14px; 
               color: #7c3aed; 
@@ -195,137 +181,106 @@ export function CertificateModal({
               font-weight: 600;
               word-break: break-all;
             }
-            
             .date { 
               font-size: 16px; 
               color: #374151; 
               margin: 20px 0;
               font-weight: 500;
             }
-            
             .mentor-section {
-              margin-top: 50px;
-              padding-top: 30px;
-              border-top: 2px solid #e5e7eb;
+              margin-top: 40px;
+              padding-top: 24px;
+              border-top: 1px solid #e2e8f0;
             }
-            
             .mentor-name {
               font-size: 18px;
               color: #1f2937;
               font-weight: 600;
             }
-            
             .cert-id {
-              font-size: 14px;
-              color: #9ca3af;
-              margin-top: 20px;
+              font-size: 13px;
+              color: #64748b;
+              margin-top: 18px;
               font-family: 'Courier New', monospace;
-              background: #f9fafb;
-              padding: 10px;
-              border-radius: 8px;
-              border: 1px solid #e5e7eb;
+              background: #f8fafc;
+              padding: 8px;
+              border-radius: 6px;
+              border: 1px solid #e2e8f0;
             }
           </style>
         </head>
         <body>
           <div class="certificate">
-            <div style="font-size: 60px; margin-bottom: 20px;">🏆</div>
-            <h1 class="title">CERTIFICATE OF COMPLETION</h1>
-            
-            <div style="font-size: 18px; color: #6b7280; margin-bottom: 30px;">This is to certify that</div>
-            
+            <div style="font-size: 48px; margin-bottom: 12px;">🏅</div>
+            <h1 class="title">Certificate of Completion</h1>
+            <div style="font-size: 16px; color: #64748b; margin-bottom: 28px;">This is to certify that</div>
             <div class="student-name">${certificate.user_name}</div>
-            
             <div class="wallet-container">
               <div style="font-size: 14px; color: #374151; margin-bottom: 8px; font-weight: 600;">Blockchain Wallet Address</div>
               <div class="wallet-address">${certificate.wallet_address}</div>
             </div>
-            
-            <div style="font-size: 18px; color: #6b7280; margin-bottom: 20px;">has successfully completed the course</div>
+            <div style="font-size: 16px; color: #64748b; margin-bottom: 18px;">has successfully completed the course</div>
             <div class="course-title">"${certificate.course_title}"</div>
-            
-            <div class="date">✅ Completed on: ${new Date(certificate.completion_date).toLocaleDateString('en-US', { 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
+            <div class="date">Completed on: ${new Date(certificate.completion_date).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
             })}</div>
-            
             <div class="mentor-section">
               <div style="width: 200px; height: 2px; background: #6b7280; margin: 0 auto 10px auto;"></div>
               <div class="mentor-name">${certificate.mentor_name}</div>
               <div style="font-size: 14px; color: #6b7280; margin-top: 5px;">Course Instructor</div>
             </div>
-            
             <div class="cert-id">
               <strong>Certificate ID: ${certificate.certificate_id}</strong><br>
               OpenLearnX Learning Platform<br>
-              <span style="color: #7c3aed;">🔒 Blockchain Verified Completion</span>
+              <span style="color: #7c3aed;">Blockchain Verified Completion</span>
             </div>
           </div>
         </body>
         </html>
       `
 
-      const printWindow = window.open('', '_blank')
+      const printWindow = window.open("", "_blank")
       if (printWindow) {
         printWindow.document.write(certificateHTML)
         printWindow.document.close()
-        
+
         printWindow.onload = () => {
           setTimeout(() => {
             printWindow.print()
             printWindow.close()
           }, 500)
         }
-        
+
         toast.success("Certificate PDF download initiated!")
       } else {
         toast.error("Popup blocked. Please allow popups and try again.")
       }
-      
     } catch (error) {
-      console.error('PDF generation error:', error)
       toast.error("Failed to generate PDF")
     }
   }
 
   const handleShareCertificate = async () => {
     if (!certificate) return
-    
-    const shareText = `🎓 I just completed "${certificate.course_title}" on OpenLearnX!\n\n👤 Student: ${certificate.user_name}\n🏆 Certificate ID: ${certificate.certificate_id}\n🔗 View: ${certificate.public_url || window.location.origin + certificate.unique_url}\n\n#OpenLearnX #Blockchain #Learning`
-    
+
+    const shareText = `🎓 I just completed "${certificate.course_title}" on OpenLearnX!\n\n👤 Student: ${certificate.user_name}\n🏆 Certificate ID: ${certificate.certificate_id}\n🔗 View: ${certificate.public_url || window.location.origin + certificate.unique_url}\n\n#OpenLearnX #Learning`
+
     if (navigator.share) {
       try {
         await navigator.share({
           title: `Certificate of Completion - ${certificate.course_title}`,
           text: shareText,
-          url: certificate.public_url || `${window.location.origin}${certificate.unique_url}`
+          url: certificate.public_url || `${window.location.origin}${certificate.unique_url}`,
         })
-        
-        // Track share
-        try {
-          await fetch(`http://127.0.0.1:5000/api/certificate/share/${certificate.certificate_id}`, {
-            method: 'POST'
-          })
-        } catch (e) {
-          console.log('Share tracking failed:', e)
-        }
       } catch (error) {
-        console.log('Share cancelled')
+        return
       }
     } else {
       try {
         await navigator.clipboard.writeText(shareText)
         toast.success("Certificate details copied to clipboard!")
-        
-        // Track share
-        try {
-          await fetch(`http://127.0.0.1:5000/api/certificate/share/${certificate.certificate_id}`, {
-            method: 'POST'
-          })
-        } catch (e) {
-          console.log('Share tracking failed:', e)
-        }
       } catch (error) {
         toast.error("Failed to copy certificate details")
       }
@@ -333,8 +288,8 @@ export function CertificateModal({
   }
 
   const handleClose = () => {
-    setStep('input')
-    setUserName('')
+    setStep("input")
+    setUserName("")
     setCertificate(null)
     setLoading(false)
     onClose()
@@ -343,9 +298,7 @@ export function CertificateModal({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        
-        {/* Step 1: Name Input */}
-        {step === 'input' && (
+        {step === "input" && (
           <>
             <div className="px-8 py-6 border-b border-gray-200 flex justify-between items-center">
               <div className="flex items-center space-x-3">
@@ -433,29 +386,22 @@ export function CertificateModal({
                   disabled={!userName.trim() || loading}
                   className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-all"
                 >
-                  {loading ? 'Generating...' : 'Generate Certificate'}
+                  {loading ? "Generating..." : "Generate Certificate"}
                 </button>
               </div>
             </div>
           </>
         )}
 
-        {/* Step 2: Generating */}
-        {step === 'generating' && (
+        {step === "generating" && (
           <div className="px-8 py-12 text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-6"></div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Generating Your Certificate</h3>
             <p className="text-gray-600">Creating unique certificate ID and blockchain verification...</p>
-            <div className="mt-4 flex items-center justify-center space-x-2 text-sm text-gray-500">
-              <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-              <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-            </div>
           </div>
         )}
 
-        {/* Step 3: Certificate Generated */}
-        {step === 'completed' && certificate && (
+        {step === "completed" && certificate && (
           <>
             <div className="px-8 py-6 border-b border-gray-200 flex justify-between items-center">
               <div className="flex items-center space-x-3">
@@ -473,66 +419,57 @@ export function CertificateModal({
             </div>
 
             <div className="p-8">
-              <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border-4 border-indigo-200 rounded-xl p-8 mb-8 text-center relative overflow-hidden">
-                <div className="absolute top-4 right-4 bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold flex items-center space-x-1">
+              <div className="bg-gradient-to-br from-slate-50 to-white border-2 border-slate-300 rounded-md p-10 mb-8 text-center relative overflow-hidden shadow-inner">
+                <div className="absolute top-4 right-4 bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-xs font-semibold flex items-center space-x-1">
                   <CheckCircle className="w-3 h-3" />
                   <span>Verified</span>
                 </div>
-                
-                <div className="text-4xl mb-4">🏆</div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">CERTIFICATE OF COMPLETION</h3>
-                <p className="text-gray-600 mb-6">This is to certify that</p>
-                
-                <div className="mb-6">
-                  <h4 className="text-4xl font-bold text-indigo-600 mb-3 border-b-2 border-indigo-300 pb-2 inline-block capitalize">
-                    {certificate.user_name}
-                  </h4>
-                  <p className="text-sm text-gray-500 mt-2">Student</p>
-                </div>
-                
-                <div className="mb-6">
-                  <p className="text-sm text-gray-500 mb-2">Blockchain Wallet Address:</p>
-                  <div className="bg-purple-100 border-2 border-dashed border-purple-300 rounded-lg p-3 mx-auto max-w-md">
-                    <p className="text-purple-700 font-mono text-sm break-all">
-                      {certificate.wallet_address}
-                    </p>
-                  </div>
-                </div>
-                
-                <p className="text-gray-600 mb-2">has successfully completed the course</p>
-                <h5 className="text-xl font-semibold text-gray-900 mb-4 italic">"{certificate.course_title}"</h5>
-                
-                <div className="text-sm text-gray-500 mb-6">
-                  <p>Completed on: {new Date(certificate.completion_date).toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}</p>
+
+                <div className="absolute inset-0 pointer-events-none opacity-10">
+                  <div className="w-64 h-64 border-8 border-indigo-500 rounded-full absolute -top-20 -left-20"></div>
+                  <div className="w-64 h-64 border-8 border-emerald-500 rounded-full absolute -bottom-24 -right-24"></div>
                 </div>
 
-                <div className="mt-8 pt-6 border-t border-indigo-200">
-                  <div className="flex justify-center">
+                <div className="relative">
+                  <div className="text-sm tracking-[0.2em] text-slate-500 font-semibold">OPENLEARNX</div>
+                  <h3 className="text-3xl font-serif font-semibold text-slate-900 mt-2">Certificate of Completion</h3>
+                  <div className="mt-6 text-sm text-slate-600">This certifies that</div>
+
+                  <div className="mt-4 mb-6">
+                    <h4 className="text-4xl font-serif font-bold text-indigo-700 border-b border-slate-300 pb-2 inline-block capitalize">
+                      {certificate.user_name}
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-2">Student</p>
+                  </div>
+
+                  <div className="mb-5 text-sm text-slate-600">has successfully completed the course</div>
+                  <div className="text-2xl font-serif font-semibold text-slate-900 mb-3">"{certificate.course_title}"</div>
+
+                  <div className="text-xs text-slate-500 mb-6">
+                    Completed on: {new Date(certificate.completion_date).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                    <div className="text-left">
+                      <div className="text-xs text-slate-500">Instructor</div>
+                      <div className="text-sm font-semibold text-slate-800">{certificate.mentor_name}</div>
+                    </div>
                     <div className="text-center">
-                      <div className="w-32 h-0.5 bg-gray-400 mb-2 mx-auto"></div>
-                      <p className="text-base font-semibold text-gray-700">
-                        {certificate.mentor_name}
-                      </p>
-                      <p className="text-xs text-gray-500">Course Instructor</p>
+                      <div className="inline-block px-4 py-2 border border-slate-300 rounded-md text-xs text-slate-600 font-mono">
+                        ID: {certificate.certificate_id}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs text-slate-500">Wallet</div>
+                      <div className="text-xs text-indigo-700 font-mono break-all">
+                        {certificate.wallet_address}
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-indigo-200">
-                  <div className="bg-gray-50 rounded-lg p-4 border">
-                    <p className="text-sm font-semibold text-gray-700 mb-2">🆔 Unique Certificate ID:</p>
-                    <p className="text-lg font-mono font-bold text-indigo-600 bg-white px-3 py-2 rounded border">
-                      {certificate.certificate_id}
-                    </p>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-4">
-                    <strong>OpenLearnX Learning Platform</strong><br/>
-                    <span className="text-purple-600">🔒 Blockchain Verified Completion</span>
-                  </p>
                 </div>
               </div>
 
@@ -555,7 +492,7 @@ export function CertificateModal({
 
               <div className="text-center">
                 <p className="text-sm text-gray-500">
-                  🎉 Your certificate with unique ID <strong>{certificate.certificate_id}</strong> has been generated!
+                  Your certificate with unique ID <strong>{certificate.certificate_id}</strong> has been generated.
                 </p>
                 {certificate.unique_url && (
                   <p className="text-xs text-gray-400 mt-2">

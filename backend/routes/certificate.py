@@ -807,9 +807,20 @@ def get_user_certificates(user_id):
         db = create_isolated_mongodb_connection()
         if db is None:
             return jsonify({"error": "Database connection failed"}), 500
-        
+
+        normalized_user_id = str(user_id).strip()
+        if normalized_user_id.startswith("0x"):
+            normalized_user_id = normalized_user_id.lower()
+
         certificates = list(db.certificates.find(
-            {"user_id": user_id}, 
+            {
+                "$or": [
+                    {"user_id": user_id},
+                    {"user_id": normalized_user_id},
+                    {"wallet_address": user_id},
+                    {"wallet_address": normalized_user_id},
+                ]
+            },
             {"_id": 0, "encrypted_wallet_id": 0}
         ).sort("created_at", -1))
         

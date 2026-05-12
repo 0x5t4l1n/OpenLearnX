@@ -18,7 +18,7 @@ client = MongoClient(mongo_uri)
 db = client.openlearnx
 
 # JWT secret - must be set via environment variable
-JWT_SECRET = os.getenv('JWT_SECRET')
+JWT_SECRET = os.getenv('JWT_SECRET_KEY') or os.getenv('JWT_SECRET')
 if not JWT_SECRET:
     import warnings
     import tempfile
