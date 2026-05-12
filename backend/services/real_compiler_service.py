@@ -22,6 +22,7 @@ class RealCompilerService:
 
         # Docker is mandatory for secure execution.
         self.language_configs = {
+            # Interpreted Languages
             "python": {
                 "image": "python:3.11-alpine",
                 "file_name": "code.py",
@@ -40,6 +41,71 @@ class RealCompilerService:
                 "memory_limit": "128m",
                 "cpu_limit": 0.35,
             },
+            "bash": {
+                "image": "ubuntu:22.04",
+                "file_name": "code.sh",
+                "compile_command": None,
+                "run_command": "bash /workspace/code.sh",
+                "timeout": 10,
+                "memory_limit": "64m",
+                "cpu_limit": 0.25,
+            },
+            "ruby": {
+                "image": "ruby:3.2-alpine",
+                "file_name": "code.rb",
+                "compile_command": None,
+                "run_command": "ruby /workspace/code.rb",
+                "timeout": 10,
+                "memory_limit": "128m",
+                "cpu_limit": 0.35,
+            },
+            "php": {
+                "image": "php:8.2-alpine",
+                "file_name": "code.php",
+                "compile_command": None,
+                "run_command": "php /workspace/code.php",
+                "timeout": 8,
+                "memory_limit": "128m",
+                "cpu_limit": 0.35,
+            },
+            "r": {
+                "image": "rocker/r-base:latest",
+                "file_name": "code.R",
+                "compile_command": None,
+                "run_command": "Rscript /workspace/code.R",
+                "timeout": 15,
+                "memory_limit": "256m",
+                "cpu_limit": 0.6,
+            },
+            "julia": {
+                "image": "julia:1.9-alpine",
+                "file_name": "code.jl",
+                "compile_command": None,
+                "run_command": "julia /workspace/code.jl",
+                "timeout": 15,
+                "memory_limit": "256m",
+                "cpu_limit": 0.6,
+            },
+            "perl": {
+                "image": "perl:5.36-alpine",
+                "file_name": "code.pl",
+                "compile_command": None,
+                "run_command": "perl /workspace/code.pl",
+                "timeout": 10,
+                "memory_limit": "128m",
+                "cpu_limit": 0.35,
+            },
+            "lua": {
+                "image": "lua:5.4",
+                "file_name": "code.lua",
+                "compile_command": None,
+                "run_command": "lua /workspace/code.lua",
+                "timeout": 8,
+                "memory_limit": "64m",
+                "cpu_limit": 0.25,
+            },
+            
+            # Compiled Languages
             "c": {
                 "image": "gcc:13",
                 "file_name": "code.c",
@@ -79,11 +145,65 @@ class RealCompilerService:
             "rust": {
                 "image": "rust:1.77-alpine",
                 "file_name": "code.rs",
-                "compile_command": "rustc /workspace/code.rs -o /workspace/program",
+                "compile_command": "rustc -O /workspace/code.rs -o /workspace/program",
                 "run_command": "/workspace/program",
                 "timeout": 20,
                 "memory_limit": "512m",
                 "cpu_limit": 0.8,
+            },
+            "kotlin": {
+                "image": "openjdk:17-alpine",
+                "file_name": "code.kt",
+                "compile_command": "apt-get update && apt-get install -y kotlin && kotlinc /workspace/code.kt -include-runtime -d /workspace/program.jar",
+                "run_command": "java -jar /workspace/program.jar",
+                "timeout": 15,
+                "memory_limit": "256m",
+                "cpu_limit": 0.6,
+            },
+            "swift": {
+                "image": "swift:5.9-alpine",
+                "file_name": "code.swift",
+                "compile_command": "swiftc -O /workspace/code.swift -o /workspace/program",
+                "run_command": "/workspace/program",
+                "timeout": 15,
+                "memory_limit": "256m",
+                "cpu_limit": 0.6,
+            },
+            "typescript": {
+                "image": "node:20-alpine",
+                "file_name": "code.ts",
+                "compile_command": "npm install -g typescript && tsc /workspace/code.ts --outDir /workspace",
+                "run_command": "node /workspace/code.js",
+                "timeout": 10,
+                "memory_limit": "256m",
+                "cpu_limit": 0.5,
+            },
+            "csharp": {
+                "image": "mcr.microsoft.com/dotnet/sdk:7.0-alpine",
+                "file_name": "Program.cs",
+                "compile_command": "dotnet new console -o /workspace && cp /workspace/Program.cs /workspace/Program.cs.bak && dotnet build /workspace -c Release",
+                "run_command": "dotnet /workspace/bin/Release/net7.0/workspace.dll",
+                "timeout": 15,
+                "memory_limit": "512m",
+                "cpu_limit": 0.7,
+            },
+            "scala": {
+                "image": "openjdk:17-alpine",
+                "file_name": "code.scala",
+                "compile_command": "apt-get update && apt-get install -y scala && scalac /workspace/code.scala",
+                "run_command": "scala -cp /workspace code",
+                "timeout": 15,
+                "memory_limit": "256m",
+                "cpu_limit": 0.6,
+            },
+            "groovy": {
+                "image": "openjdk:17-alpine",
+                "file_name": "code.groovy",
+                "compile_command": "apt-get update && apt-get install -y groovy",
+                "run_command": "groovy /workspace/code.groovy",
+                "timeout": 12,
+                "memory_limit": "256m",
+                "cpu_limit": 0.5,
             },
         }
 
@@ -137,6 +257,16 @@ class RealCompilerService:
             "dup2",
         }
         self.blocked_patterns = {
+            "python": [
+                r"\b__import__\s*\(",
+                r"\beval\s*\(",
+                r"\bexec\s*\(",
+                r"\bopen\s*\(",
+                r"\bcompile\s*\(",
+                r"\bos\.",
+                r"\bsocket\.",
+                r"\bsubprocess\.",
+            ],
             "javascript": [
                 r"require\s*\(\s*['\"]child_process['\"]\s*\)",
                 r"require\s*\(\s*['\"]net['\"]\s*\)",
@@ -144,6 +274,58 @@ class RealCompilerService:
                 r"process\.env",
                 r"process\.binding",
                 r"fs\.readFile|fs\.writeFile|fs\.open|fs\.create",
+                r"eval\s*\(",
+                r"Function\s*\(",
+            ],
+            "bash": [
+                r"\b\$\(.*\)",
+                r"\`.*\`",
+                r">\s*/dev/",
+                r"rm\s+-rf",
+                r"dd\s+if=",
+            ],
+            "ruby": [
+                r"\beval\s*\(",
+                r"\b`.*`",
+                r"\bsystem\s*\(",
+                r"\bexec\s*\(",
+                r"\bsocket\.",
+            ],
+            "php": [
+                r"\beval\s*\(",
+                r"\bsystem\s*\(",
+                r"\bpassthru\s*\(",
+                r"\bshell_exec\s*\(",
+                r"\bproc_open\s*\(",
+                r"\bfopen\s*\(",
+                r"\bfile_get_contents\s*\(",
+            ],
+            "r": [
+                r"\bsystem\s*\(",
+                r"\bsystem2\s*\(",
+                r"\bsource\s*\(",
+                r"\bdyn\.load\s*\(",
+                r"\b\.Call\s*\(",
+            ],
+            "julia": [
+                r"\brun\s*\(",
+                r"\b@system\s*",
+                r"\bccall\s*\(",
+                r"\bdlopen\s*\(",
+                r"\bsocket\(",
+            ],
+            "perl": [
+                r"\beval\s*\{",
+                r"\bsystem\s*\(",
+                r"\bexec\s*\(",
+                r"\bopen\s*\(",
+                r"\bsocket\s*\(",
+            ],
+            "lua": [
+                r"\bos\.execute\s*\(",
+                r"\bloadstring\s*\(",
+                r"\bdebug\.getfenv\s*\(",
+                r"\bio\.open\s*\(",
             ],
             "java": [
                 r"Runtime\.getRuntime\s*\(",
@@ -151,6 +333,8 @@ class RealCompilerService:
                 r"java\.net\.",
                 r"java\.nio\.file\.",
                 r"System\.getenv\s*\(",
+                r"System\.load\s*\(",
+                r"System\.loadLibrary\s*\(",
             ],
             "c": [
                 r"\bsystem\s*\(",
@@ -158,6 +342,8 @@ class RealCompilerService:
                 r"\bfork\s*\(",
                 r"\bexec[a-z]*\s*\(",
                 r"\bsocket\s*\(",
+                r"\bopen\s*\(",
+                r"\bfopen\s*\(",
             ],
             "cpp": [
                 r"\bsystem\s*\(",
@@ -165,17 +351,51 @@ class RealCompilerService:
                 r"\bfork\s*\(",
                 r"\bexec[a-z]*\s*\(",
                 r"\bsocket\s*\(",
+                r"\bopen\s*\(",
             ],
             "go": [
                 r"\bexec\.Command\s*\(",
                 r"\bnet\.",
                 r"\bos\.StartProcess\s*\(",
                 r"\bos\.Exec\s*\(",
+                r"\bos\.Open\s*\(",
             ],
             "rust": [
                 r"std::process::Command",
                 r"std::net::",
                 r"unsafe\s*\{",
+                r"std::fs::File::open",
+            ],
+            "kotlin": [
+                r"Runtime\.getRuntime\s*\(",
+                r"ProcessBuilder\s*\(",
+                r"Runtime\.exec\s*\(",
+            ],
+            "swift": [
+                r"Process\(\)",
+                r"FileHandle\.open",
+                r"Darwin\.system",
+            ],
+            "typescript": [
+                r"require\s*\(\s*['\"]child_process['\"]\s*\)",
+                r"eval\s*\(",
+                r"Function\s*\(",
+            ],
+            "csharp": [
+                r"System\.Diagnostics\.Process\.Start",
+                r"System\.Net\.",
+                r"System\.IO\.File\.",
+                r"Assembly\.Load",
+            ],
+            "scala": [
+                r"scala\.sys\.process\.Process",
+                r"Runtime\.getRuntime\s*\(",
+                r"java\.net\.",
+            ],
+            "groovy": [
+                r"\bexecute\s*\(",
+                r"\bsystem\s*\(",
+                r"ProcessGroovyMethods\.getText\s*\(",
             ],
         }
 
@@ -213,13 +433,38 @@ class RealCompilerService:
 
     def execute_code(self, code: str, language: str, input_data: str = "", execution_id: str = None) -> Dict[str, Any]:
         language = (language or "").lower().strip()
-        if language == "js":
-            language = "javascript"
-        if language == "c++":
-            language = "cpp"
+        
+        # Language aliases mapping
+        language_aliases = {
+            "js": "javascript",
+            "ts": "typescript",
+            "py": "python",
+            "c++": "cpp",
+            "cs": "csharp",
+            "rb": "ruby",
+            "pl": "perl",
+            "kt": "kotlin",
+            "swift": "swift",
+            "scala": "scala",
+            "groovy": "groovy",
+            "sh": "bash",
+            "bash": "bash",
+            "r": "r",
+            "lua": "lua",
+            "julia": "julia",
+            "go": "go",
+            "rust": "rust",
+            "java": "java",
+            "c": "c",
+        }
+        
+        # Convert alias to actual language name
+        if language in language_aliases:
+            language = language_aliases[language]
 
         if language not in self.language_configs:
-            return {"error": f"Language '{language}' not supported"}
+            supported = ", ".join(sorted(self.language_configs.keys()))
+            return {"error": f"Language '{language}' not supported. Supported: {supported}"}
 
         if not execution_id:
             execution_id = str(uuid.uuid4())
